@@ -5,26 +5,20 @@ import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
-import com.penn.ppj.Event.ToggleToolBarEvent;
-import com.penn.ppj.Event.UserLoginEvent;
-import com.penn.ppj.Event.UserLogoutEvent;
+import com.penn.ppj.messageEvent.ToggleToolBarEvent;
+import com.penn.ppj.messageEvent.UserLoginEvent;
+import com.penn.ppj.messageEvent.UserLogoutEvent;
 import com.penn.ppj.databinding.ActivityMainBinding;
 import com.penn.ppj.util.CurUser;
 import com.penn.ppj.util.PPHelper;
@@ -34,11 +28,11 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    private static final int DASHBOARD = 0;
+    private static final int NEARBY = 1;
 
     private ActivityMainBinding binding;
 
@@ -141,17 +135,12 @@ public class MainActivity extends AppCompatActivity
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void LoginEvent(UserLogoutEvent event) {
+        binding.mainViewPager.setCurrentItem(NEARBY);
         setupMenuIcon();
     }
 
     private void createMoment() {
-        if (!CurUser.logined()) {
 
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-
-            return;
-        }
     }
 
     private void loginOut() {

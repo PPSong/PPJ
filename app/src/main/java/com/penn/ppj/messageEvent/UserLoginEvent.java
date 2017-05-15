@@ -1,4 +1,4 @@
-package com.penn.ppj.Event;
+package com.penn.ppj.messageEvent;
 
 /**
  * Created by penn on 13/05/2017.

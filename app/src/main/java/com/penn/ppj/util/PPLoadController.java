@@ -4,7 +4,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
-import com.penn.ppj.Event.ToggleToolBarEvent;
+import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 
 import org.greenrobot.eventbus.EventBus;
 

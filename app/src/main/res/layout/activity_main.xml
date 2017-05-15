@@ -20,8 +20,10 @@
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/main_toolbar"
+                android:background="@drawable/ab_gradient_dark"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
+                android:theme="@style/PPActionBar"
                 android:fitsSystemWindows="true" />
 
             <android.support.design.widget.FloatingActionButton

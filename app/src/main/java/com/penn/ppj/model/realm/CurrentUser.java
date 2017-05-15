@@ -24,8 +24,25 @@ public class CurrentUser extends RealmObject {
     private int socketPort;
     private RealmList<Pic> pics;
 
-    private String latestHash;
-    private String earliestHash;
+    private long latestMomentCreateTime;
+    private long earliestMomentCreateTime;
+
+    public long getLatestMomentCreateTime() {
+        return latestMomentCreateTime;
+    }
+
+    public void setLatestMomentCreateTime(long latestMomentCreateTime) {
+        this.latestMomentCreateTime = latestMomentCreateTime;
+    }
+
+    public long getEarliestMomentCreateTime() {
+        return earliestMomentCreateTime;
+    }
+
+    public void setEarliestMomentCreateTime(long earliestMomentCreateTime) {
+        this.earliestMomentCreateTime = earliestMomentCreateTime;
+    }
+
     private boolean initLoadingFinished;
 
     public String getUserId() {
@@ -132,21 +149,6 @@ public class CurrentUser extends RealmObject {
         this.pics = pics;
     }
 
-    public String getLatestHash() {
-        return latestHash;
-    }
-
-    public void setLatestHash(String latestHash) {
-        this.latestHash = latestHash;
-    }
-
-    public String getEarliestHash() {
-        return earliestHash;
-    }
-
-    public void setEarliestHash(String earliestHash) {
-        this.earliestHash = earliestHash;
-    }
 
     public boolean isInitLoadingFinished() {
         return initLoadingFinished;

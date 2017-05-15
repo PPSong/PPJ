@@ -12,7 +12,6 @@ import io.realm.annotations.PrimaryKey;
 public class Pic extends RealmObject {
     @PrimaryKey
     private String key; //netFileName or createTime_userId_index
-    private String netFileName;
     private String status;
     private byte[] localData;
 
@@ -22,14 +21,6 @@ public class Pic extends RealmObject {
 
     public void setKey(String key) {
         this.key = key;
-    }
-
-    public String getNetFileName() {
-        return netFileName;
-    }
-
-    public void setNetFileName(String netFileName) {
-        this.netFileName = netFileName;
     }
 
     public String getStatus() {

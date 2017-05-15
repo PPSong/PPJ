@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import com.penn.ppj.databinding.ActivityLoginBinding;
+import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPPagerAdapter;
 
 public class LoginActivity extends AppCompatActivity {
@@ -25,10 +26,5 @@ public class LoginActivity extends AppCompatActivity {
         binding.mainViewPager.setAdapter(adapter);
 
         binding.mainTabLayout.setupWithViewPager(binding.mainViewPager);
-    }
-
-    public void login(View view) {
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
     }
 }

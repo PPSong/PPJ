@@ -3,6 +3,7 @@ package com.penn.ppj.util;
 import android.content.Context;
 import android.util.Log;
 import android.util.TypedValue;
+import android.widget.Toast;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -18,6 +19,7 @@ import org.json.JSONObject;
 
 import java.util.regex.Pattern;
 
+import es.dmoral.toasty.Toasty;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.functions.Function;
@@ -31,6 +33,7 @@ import io.realm.RealmList;
  */
 
 public class PPHelper {
+    public static final int TIMELINE_MINE_PAGE_SIZE = 20;
 
     public static String currentUserId;
     public static String token;
@@ -158,7 +161,7 @@ public class PPHelper {
         Realm.setDefaultConfiguration(config);
     }
 
-    public static Observable<String> login(final String phone, String pwd) throws Exception {
+    public static Observable<String> login(final String phone, String pwd) {
         PPJSONObject jBody = new PPJSONObject();
         jBody
                 .put("phone", phone)
@@ -168,8 +171,6 @@ public class PPHelper {
                 .api("user.login", jBody.getJSONObject());
 
         return apiResult
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
                 .flatMap(new Function<String, ObservableSource<String>>() {
                     @Override
                     public ObservableSource<String> apply(String s) throws Exception {
@@ -239,7 +240,6 @@ public class PPHelper {
                             for (int i = 0; i < tmpArr.size(); i++) {
                                 Pic pic = new Pic();
                                 pic.setKey("profile_pic" + i);
-                                pic.setNetFileName(tmpArr.get(i).getAsString());
                                 pic.setStatus(PicStatus.NET);
                                 pics.add(pic);
                             }
@@ -255,5 +255,10 @@ public class PPHelper {
                         return "OK";
                     }
                 });
+    }
+
+    public static void error(String error) {
+        Log.v("pplog", error);
+        Toasty.error(PPApplication.getContext(), error, Toast.LENGTH_LONG, true).show();
     }
 }

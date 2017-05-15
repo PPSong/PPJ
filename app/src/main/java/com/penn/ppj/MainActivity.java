@@ -5,6 +5,8 @@ import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -16,17 +18,38 @@ import android.view.MenuItem;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.penn.ppj.messageEvent.InitLoadingEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.messageEvent.UserLoginEvent;
 import com.penn.ppj.messageEvent.UserLogoutEvent;
 import com.penn.ppj.databinding.ActivityMainBinding;
+import com.penn.ppj.model.realm.CurrentUser;
+import com.penn.ppj.model.realm.Moment;
+import com.penn.ppj.model.realm.Pic;
+import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.util.CurUser;
 import com.penn.ppj.util.PPHelper;
+import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPPagerAdapter;
+import com.penn.ppj.util.PPRetrofit;
+import com.penn.ppj.util.PPWarn;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+
+import de.jonasrottmann.realmbrowser.RealmBrowser;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -35,6 +58,7 @@ public class MainActivity extends AppCompatActivity
     private static final int NEARBY = 1;
 
     private ActivityMainBinding binding;
+    private boolean inInitLoading = false;
 
     private Menu menu;
 
@@ -90,6 +114,8 @@ public class MainActivity extends AppCompatActivity
         adapter.addFragment(new DashboardFragment(), "Category 1");
         adapter.addFragment(new NearbyFragment(), "Category 2");
         binding.mainViewPager.setAdapter(adapter);
+
+        initLoading();
     }
 
     @Override
@@ -135,12 +161,110 @@ public class MainActivity extends AppCompatActivity
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void LoginEvent(UserLogoutEvent event) {
-        binding.mainViewPager.setCurrentItem(NEARBY);
         setupMenuIcon();
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void InitLoadingEvent(InitLoadingEvent event) {
+        Log.v("pplog", "InitLoadingEvent");
+        initLoading();
     }
 
     private void createMoment() {
 
+    }
+
+    private void initLoading() {
+        synchronized (MainActivity.class) {
+            if (inInitLoading) {
+                Log.v("pplog", "initLoading return");
+                return;
+            }
+
+            Log.v("pplog", "initLoading continue");
+
+            inInitLoading = true;
+
+            try (Realm realm = Realm.getDefaultInstance()) {
+                CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
+
+                if (currentUser.isInitLoadingFinished()) {
+                    inInitLoading = false;
+                    return;
+                }
+
+                long earliestCreateTime = currentUser.getEarliestMomentCreateTime();
+
+                PPJSONObject jBody = new PPJSONObject();
+                jBody
+                        .put("before", earliestCreateTime);
+
+                final Observable<String> apiResult = PPRetrofit.getInstance().api("timeline.mine", jBody.getJSONObject());
+
+                apiResult
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                new Consumer<String>() {
+                                    @Override
+                                    public void accept(@NonNull String s) throws Exception {
+                                        PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                        if (ppWarn != null) {
+                                            throw new Exception(ppWarn.msg);
+                                        }
+
+                                        processFootprintToMoment(s);
+                                    }
+                                },
+                                new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(@NonNull Throwable throwable) throws Exception {
+                                        PPHelper.error(throwable.toString());
+                                    }
+                                }
+                        );
+            }
+        }
+    }
+
+    private void processFootprintToMoment(String s) {
+        try (Realm realm = Realm.getDefaultInstance()) {
+            CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
+
+            realm.beginTransaction();
+
+            Log.v("pplog", s);
+            JsonArray ja = PPHelper.ppFromString(s, "data.timeline").getAsJsonArray();
+
+            for (int i = 0; i < ja.size(); i++) {
+                long createTime = PPHelper.ppFromString(s, "data.timeline." + i + "._info.createTime").getAsLong();
+
+                Moment moment = new Moment();
+                moment.setId(PPHelper.ppFromString(s, "data.timeline." + i + ".id").getAsString());
+                moment.setCreateTime(createTime);
+                moment.setStatus(MomentStatus.NET);
+                moment.setAvatar(PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.head").getAsString());
+
+                Pic pic = new Pic();
+                pic.setKey(PPHelper.ppFromString(s, "data.timeline." + i + "._info.pics.0").getAsString());
+                pic.setStatus(PicStatus.NET);
+                moment.setPic(pic);
+
+                realm.insertOrUpdate(moment);
+                currentUser.setEarliestMomentCreateTime(createTime);
+            }
+
+            if (ja.size() < PPHelper.TIMELINE_MINE_PAGE_SIZE) {
+                currentUser.setInitLoadingFinished(true);
+            }
+
+            realm.commitTransaction();
+
+            inInitLoading = false;
+            //继续触发initLoading
+            EventBus.getDefault().post(new InitLoadingEvent());
+        }
     }
 
     private void loginOut() {
@@ -179,6 +303,7 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_camera) {
             // Handle the camera action
+            startRealmModelsActivity();
         } else if (id == R.id.nav_gallery) {
 
         } else if (id == R.id.nav_slideshow) {
@@ -194,5 +319,13 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    //-----ppTest-----
+    private void startRealmModelsActivity() {
+        Realm realm = Realm.getDefaultInstance();
+        RealmConfiguration configuration = realm.getConfiguration();
+        realm.close();
+        RealmBrowser.startRealmModelsActivity(this, configuration);
     }
 }

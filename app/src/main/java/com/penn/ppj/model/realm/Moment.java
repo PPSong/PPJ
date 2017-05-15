@@ -13,7 +13,6 @@ import io.realm.annotations.PrimaryKey;
 public class Moment extends RealmObject {
     @PrimaryKey
     private String id; //createTime_creatorUserId for local new moment
-    private String hash;
     private long createTime;
     private String status;
     private Pic pic;
@@ -25,14 +24,6 @@ public class Moment extends RealmObject {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getHash() {
-        return hash;
-    }
-
-    public void setHash(String hash) {
-        this.hash = hash;
     }
 
     public long getCreateTime() {

@@ -2,6 +2,7 @@ package com.penn.ppj.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -172,7 +173,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = false;
+        boolean clearData = true;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -299,6 +300,12 @@ public class PPHelper {
     }
 
     private static String getImageUrl(String imageName, int size) {
+        //容错
+        if (TextUtils.isEmpty(imageName)){
+            //pptodo 可以使用默认表示空白的图片
+            return "";
+        }
+
         //pptodo 要添加是local图片的情况
         if (imageName.startsWith("http")) {
             return imageName;

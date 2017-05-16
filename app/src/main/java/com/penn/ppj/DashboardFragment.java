@@ -1,5 +1,6 @@
 package com.penn.ppj;
 
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 
 import com.penn.ppj.databinding.FragmentDashboardBinding;
 import com.penn.ppj.databinding.MomentOverviewCellBinding;
@@ -52,6 +54,17 @@ public class DashboardFragment extends Fragment {
 
         return fragment;
     }
+
+    private final View.OnClickListener momentOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+            Moment moment = data.get(position);
+            Intent intent = new Intent(getContext(), MomentDetailActivity.class);
+            intent.putExtra("momentId", moment.getId());
+            startActivity(intent);
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -137,6 +150,8 @@ public class DashboardFragment extends Fragment {
         @Override
         public PPAdapter.PPHoldView onCreateViewHolder(ViewGroup parent, int viewType) {
             MomentOverviewCellBinding momentOverviewCellBinding = MomentOverviewCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+
+            momentOverviewCellBinding.getRoot().setOnClickListener(momentOnClickListener);
 
             return new PPHoldView(momentOverviewCellBinding);
         }

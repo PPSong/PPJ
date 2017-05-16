@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.penn.ppj.MomentDetailActivity">
+
+    <data>
+
+        <variable
+            name="data"
+            type="com.penn.ppj.model.realm.MomentDetail" />
+    </data>
+
+    <android.support.percent.PercentFrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/main_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ImageView
+            android:id="@+id/main_image_view"
+            app:imageUrl="@{data.getPic()}"
+            app:layout_aspectRatio="133%"
+            app:layout_widthPercent="100%" />
+
+        <TextView
+            android:id="@+id/main_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{data.getContent()}" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/like_floating_action_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            app:srcCompat="@drawable/ic_favorite_border_black_24dp" />
+
+    </android.support.percent.PercentFrameLayout>
+
+</layout>
+

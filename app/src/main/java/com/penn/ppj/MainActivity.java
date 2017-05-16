@@ -1,11 +1,9 @@
 package com.penn.ppj;
 
-import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -19,7 +17,6 @@ import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.penn.ppj.messageEvent.InitLoadingEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.messageEvent.UserLoginEvent;
@@ -46,10 +43,12 @@ import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+
+import static com.penn.ppj.util.PPHelper.AUTH_BODY_KEY;
+import static com.penn.ppj.util.PPRetrofit.authBody;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -114,6 +113,8 @@ public class MainActivity extends AppCompatActivity
         adapter.addFragment(new DashboardFragment(), "Category 1");
         adapter.addFragment(new NearbyFragment(), "Category 2");
         binding.mainViewPager.setAdapter(adapter);
+        //有几个tab就设几防止page自己重新刷新
+        binding.mainViewPager.setOffscreenPageLimit(2);
 
         initLoading();
     }
@@ -177,11 +178,8 @@ public class MainActivity extends AppCompatActivity
     private void initLoading() {
         synchronized (MainActivity.class) {
             if (inInitLoading) {
-                Log.v("pplog", "initLoading return");
                 return;
             }
-
-            Log.v("pplog", "initLoading continue");
 
             inInitLoading = true;
 
@@ -214,7 +212,7 @@ public class MainActivity extends AppCompatActivity
                                             throw new Exception(ppWarn.msg);
                                         }
 
-                                        processFootprintToMoment(s);
+                                        processMoment(s);
                                     }
                                 },
                                 new Consumer<Throwable>() {
@@ -228,7 +226,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void processFootprintToMoment(String s) {
+    private void processMoment(String s) {
         try (Realm realm = Realm.getDefaultInstance()) {
             CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
 
@@ -301,19 +299,18 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
+        if (id == R.id.test) {
             // Handle the camera action
             startRealmModelsActivity();
-        } else if (id == R.id.nav_gallery) {
+        } else if (id == R.id.dashboard) {
+            binding.mainViewPager.setCurrentItem(DASHBOARD);
+        } else if (id == R.id.nearby) {
+            binding.mainViewPager.setCurrentItem(NEARBY);
+        } else if (id == R.id.notification) {
 
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        } else if (id == R.id.exit) {
+            PPHelper.clear();
+            finish();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);

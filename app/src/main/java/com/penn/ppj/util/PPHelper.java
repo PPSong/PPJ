@@ -1,6 +1,8 @@
 package com.penn.ppj.util;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.widget.Toast;
@@ -10,6 +12,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.penn.ppj.PPApplication;
+import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.CurrentUser;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.ppEnum.PPValueType;
@@ -34,6 +37,10 @@ import io.realm.RealmList;
 
 public class PPHelper {
     public static final int TIMELINE_MINE_PAGE_SIZE = 20;
+    public static final String APP_NAME = "PPJ";
+    public static final String AUTH_BODY_KEY = "AUTH_BODY_KEY";
+
+    public static final String qiniuBase = "http://7xu8w0.com1.z0.glb.clouddn.com/";
 
     public static String currentUserId;
     public static String token;
@@ -42,7 +49,19 @@ public class PPHelper {
     public static String currentUserNickname;
     public static String currentUserAvatar;
     public static String socketUrl;
-    public static String baiduAk = "";
+    public static String baiduAk;
+
+    public static void clear() {
+        currentUserId = null;
+        token = null;
+        tokenTimestamp = 0;
+        currentUserNickname = null;
+        currentUserAvatar = null;
+        socketUrl = null;
+        baiduAk = null;
+        PPRetrofit.authBody = null;
+        removePrefItem(AUTH_BODY_KEY);
+    }
 
     public static int getStatusBarAddActionBarHeight(Context context) {
         int result = 0;
@@ -153,7 +172,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -161,7 +180,7 @@ public class PPHelper {
         Realm.setDefaultConfiguration(config);
     }
 
-    public static Observable<String> login(final String phone, String pwd) {
+    public static Observable<String> login(final String phone, final String pwd) {
         PPJSONObject jBody = new PPJSONObject();
         jBody
                 .put("phone", phone)
@@ -180,11 +199,18 @@ public class PPHelper {
                         }
 
                         initRealm(PPApplication.getContext(), phone);
+
                         try (Realm realm = Realm.getDefaultInstance()) {
+
+                            CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
+
                             realm.beginTransaction();
 
-                            CurrentUser currentUser = new CurrentUser();
-                            currentUser.setUserId(ppFromString(s, "data.userid").getAsString());
+                            if (currentUser == null) {
+                                currentUser = new CurrentUser();
+                                currentUser.setUserId(ppFromString(s, "data.userid").getAsString());
+                            }
+
                             currentUser.setToken(ppFromString(s, "data.token").getAsString());
                             currentUser.setTokenTimestamp(ppFromString(s, "data.tokentimestamp").getAsLong());
 
@@ -199,6 +225,7 @@ public class PPHelper {
                                     .put("tokentimestamp", currentUser.getTokenTimestamp())
                                     .toString();
                             PPRetrofit.authBody = authBody;
+                            PPHelper.setPrefStringValue(AUTH_BODY_KEY, phone + "," + pwd);
                             currentUserId = currentUser.getUserId();
                             token = currentUser.getToken();
                             tokenTimestamp = currentUser.getTokenTimestamp();
@@ -261,4 +288,49 @@ public class PPHelper {
         Log.v("pplog", error);
         Toasty.error(PPApplication.getContext(), error, Toast.LENGTH_LONG, true).show();
     }
+
+
+    public static String get80ImageUrl(String imageName) {
+        return getImageUrl(imageName, 80);
+    }
+
+    public static String get800ImageUrl(String imageName) {
+        return getImageUrl(imageName, 800);
+    }
+
+    private static String getImageUrl(String imageName, int size) {
+        //pptodo 要添加是local图片的情况
+        if (imageName.startsWith("http")) {
+            return imageName;
+        } else {
+            //pptodo 如果是"", 返回默认图片
+            String result = qiniuBase + imageName + "?imageView2/1/w/" + size + "/h/" + size + "/interlace/1/";
+            return result;
+        }
+    }
+
+    public static int calculateNoOfColumns(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        int noOfColumns = (int) (dpWidth / 180);
+        return noOfColumns;
+    }
+
+    public static Geo getLatestGeo() {
+        //pptodo implement it
+        return Geo.getDefaultGeo();
+    }
+
+    public static void setPrefStringValue(String key, String value) {
+        PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().putString(key, value).apply();
+    }
+
+    public static String getPrefStringValue(String key, String defaultValue) {
+        return PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).getString(key, defaultValue);
+    }
+
+    public static void removePrefItem(String key) {
+        PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().remove(AUTH_BODY_KEY).apply();
+    }
+
 }

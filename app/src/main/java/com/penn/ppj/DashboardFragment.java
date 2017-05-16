@@ -1,9 +1,11 @@
 package com.penn.ppj;
 
 import android.databinding.DataBindingUtil;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -13,26 +15,33 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.penn.ppj.databinding.FragmentDashboardBinding;
+import com.penn.ppj.databinding.MomentOverviewCellBinding;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPLoadController;
 import com.penn.ppj.util.PPLoadDataAdapter;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.Inflater;
 
-public class DashboardFragment extends Fragment implements PPLoadController.LoadDataProvider {
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedRealmCollectionChangeListener;
+import io.realm.Realm;
+import io.realm.RealmResults;
+import io.realm.Sort;
+
+public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
 
-    private PPAdapter ppAdapter;
-    private LinearLayoutManager linearLayoutManager;
-    private PPLoadController ppLoadController;
+    private Realm realm;
 
-    //pptodo test
-    int i = 0;
-    int j = 0;
-    long baseLong = System.currentTimeMillis();
-    //end pptodo
+    private RealmResults<Moment> data;
+
+    private PPAdapter ppAdapter;
+    private GridLayoutManager gridLayoutManager;
 
     public DashboardFragment() {
         // Required empty public constructor
@@ -58,124 +67,96 @@ public class DashboardFragment extends Fragment implements PPLoadController.Load
         View view = binding.getRoot();
         //end common
 
+        realm = Realm.getDefaultInstance();
+
+        data = realm.where(Moment.class).findAllSorted("createTime", Sort.DESCENDING);
+        data.addChangeListener(changeListener);
+
         setup();
 
         return view;
     }
 
+    @Override
+    public void onDestroyView() {
+        realm.close();
+        super.onDestroyView();
+    }
+
     private void setup() {
-        binding.mainSwipeRefreshLayout.setProgressViewOffset(true, 0, PPHelper.getStatusBarAddActionBarHeight(getContext()));
+        gridLayoutManager = new GridLayoutManager(getContext(), PPHelper.calculateNoOfColumns(getContext()));
+        binding.mainRecyclerView.setLayoutManager(gridLayoutManager);
 
-        linearLayoutManager = new LinearLayoutManager(getContext());
-        ArrayList<Long> data = new ArrayList();
-        for (int k = 0; k < 10; k++) {
-            data.add(baseLong + j++);
-        }
         ppAdapter = new PPAdapter(data);
-
-        ppLoadController = new PPLoadController(binding.mainSwipeRefreshLayout, binding.mainRecyclerView, ppAdapter, linearLayoutManager, this);
+        binding.mainRecyclerView.setAdapter(ppAdapter);
     }
 
-    @Override
-    public void refreshData() {
-        i = 0;
-        j = 0;
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                ArrayList<Long> data = new ArrayList();
-                for (int k = 0; k < 10; k++) {
-                    data.add(baseLong + j++);
-                }
-                //success with more
-                ppLoadController.ppLoadDataAdapter.getRefreshData(data, false);
-                ppLoadController.endRefreshSpinner();
-
-                //success with no more
-                //done(true)
-
-                //failed
-                //quit("test failed");
+    private final OrderedRealmCollectionChangeListener<RealmResults<Moment>> changeListener = new OrderedRealmCollectionChangeListener<RealmResults<Moment>>() {
+        @Override
+        public void onChange(RealmResults<Moment> collection, OrderedCollectionChangeSet changeSet) {
+            // `null`  means the async query returns the first time.
+            if (changeSet == null) {
+                ppAdapter.notifyDataSetChanged();
+                return;
             }
-        }, 100);
-    }
-
-    @Override
-    public void loadMoreData() {
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                ArrayList<Long> data = new ArrayList();
-                for (int k = 0; k < 10; k++) {
-                    data.add(baseLong + j++);
-                }
-                //success with more
-                ppLoadController.ppLoadDataAdapter.loadMoreEnd(data, ++i == 10);
-                ppLoadController.removeLoadMoreSpinner();
-                //success with no more
-                //done(true)
-
-                //failed
-                //quit("test failed");
+            // For deletions, the adapter has to be notified in reverse order.
+            OrderedCollectionChangeSet.Range[] deletions = changeSet.getDeletionRanges();
+            for (int i = deletions.length - 1; i >= 0; i--) {
+                OrderedCollectionChangeSet.Range range = deletions[i];
+                ppAdapter.notifyItemRangeRemoved(range.startIndex, range.length);
             }
-        }, 100);
-    }
 
-    class PPAdapter extends PPLoadDataAdapter<Long, Long> {
+            OrderedCollectionChangeSet.Range[] insertions = changeSet.getInsertionRanges();
+            for (OrderedCollectionChangeSet.Range range : insertions) {
+                ppAdapter.notifyItemRangeInserted(range.startIndex, range.length);
+            }
 
-        public class PPViewHolder extends RecyclerView.ViewHolder {
-            TextView textView;
+            OrderedCollectionChangeSet.Range[] modifications = changeSet.getChangeRanges();
+            for (OrderedCollectionChangeSet.Range range : modifications) {
+                ppAdapter.notifyItemRangeChanged(range.startIndex, range.length);
+            }
+        }
+    };
 
-            public PPViewHolder(View itemView) {
-                super(itemView);
-                textView = (TextView) itemView.findViewById(android.R.id.text1);
+    class PPAdapter extends RecyclerView.Adapter<PPAdapter.PPHoldView> {
+        private List<Moment> data;
+
+        public class PPHoldView extends RecyclerView.ViewHolder {
+            private MomentOverviewCellBinding binding;
+
+            public PPHoldView(MomentOverviewCellBinding binding) {
+                super(binding.getRoot());
+                this.binding = binding;
             }
         }
 
-        public PPAdapter(List<Long> data) {
+        public PPAdapter(List<Moment> data) {
             this.data = data;
         }
 
         @Override
-        protected RecyclerView.ViewHolder ppOnCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
+        public PPAdapter.PPHoldView onCreateViewHolder(ViewGroup parent, int viewType) {
+            MomentOverviewCellBinding momentOverviewCellBinding = MomentOverviewCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
 
-            return new PPViewHolder(v);
+            return new PPHoldView(momentOverviewCellBinding);
         }
 
         @Override
-        protected int ppGetItemViewType(int position) {
-            return 0;
+        public void onBindViewHolder(PPAdapter.PPHoldView holder, int position) {
+            Picasso.with(getContext())
+                    .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
+                    //.placeholder(R.drawable.ab_gradient_dark)
+                    .into(holder.binding.mainImageView);
+
+            Picasso.with(getContext())
+                    .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
+                    //.placeholder(R.drawable.ab_gradient_dark)
+                    .into(holder.binding.avatarCircleImageView);
         }
 
         @Override
-        public void ppOnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            ((PPViewHolder) holder).textView.setText(data.get(position).toString());
-        }
-
-        @Override
-        protected void addLoadMoreData(final List data) {
-            int oldSize = this.data.size();
-            int size = data.size();
-
-            this.data.addAll(data);
-
-            notifyItemRangeInserted(oldSize, size);
-        }
-
-        @Override
-        protected void addRefreshData(List data) {
-            int oldSize = this.data.size();
-            int size = data.size();
-
-            this.data.clear();
-            notifyItemRangeRemoved(0, oldSize);
-
-            this.data.addAll(data);
-            Log.v("pplog", "addRefreshData:" + size);
-            notifyItemRangeInserted(0, size);
+        public int getItemCount() {
+            return data.size();
         }
     }
 }

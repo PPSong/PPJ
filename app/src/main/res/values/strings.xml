@@ -14,4 +14,8 @@
     <string name="password">密码</string>
     <string name="verify_code">认证码</string>
     <string name="request_verify_code">获取认证码</string>
+    <string name="dashboard">片刻</string>
+    <string name="nearby">附近</string>
+    <string name="notification">动态</string>
+    <string name="exit">退出</string>
 </resources>

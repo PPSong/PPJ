@@ -3,10 +3,14 @@ package com.penn.ppj;
 import android.content.Intent;
 import android.databinding.BindingAdapter;
 import android.databinding.DataBindingUtil;
+import android.graphics.Bitmap;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -28,6 +32,7 @@ import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import junit.framework.Test;
 
@@ -104,14 +109,34 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     @BindingAdapter({"bind:imageUrl"})
-    public static void setImageViewResource(ImageView imageView, String pic) {
+    public static void setImageViewResource(final ImageView imageView, String pic) {
         if (TextUtils.isEmpty(pic)) {
             return;
         }
 
         Picasso.with(PPApplication.getContext())
                 .load(PPHelper.get800ImageUrl(pic))
-                .into(imageView);
+                .into(new Target() {
+                    //pptodo 改进取色方案
+                    @Override
+                    public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+                    /* Save the bitmap or do something with it here */
+                        Palette p = Palette.from(bitmap).generate();
+                        //Set it in the ImageView
+                        imageView.setImageBitmap(bitmap);
+                        imageView.setBackground(new ColorDrawable(p.getVibrantColor(PPApplication.getContext().getResources().getColor(R.color.colorPrimaryDark))));
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+                    }
+
+                    @Override
+                    public void onBitmapFailed(Drawable errorDrawable) {
+                    }
+                });
+
+
     }
 
     private void getMomentDetail() {

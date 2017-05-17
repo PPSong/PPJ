@@ -19,4 +19,7 @@
     <string name="notification">动态</string>
     <string name="exit">退出</string>
     <string name="title_activity_moment_detail">MomentDetailActivity</string>
+    <string name="follow">关注</string>
+    <string name="fan">粉丝</string>
+    <string name="friend">好友</string>
 </resources>

@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,6 +49,8 @@ import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
+
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 
 public class NearbyFragment extends Fragment implements PPLoadController.LoadDataProvider {
 
@@ -281,15 +284,19 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
 
         @Override
         public void ppOnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            Picasso.with(getContext())
-                    .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
-                    //.placeholder(R.drawable.ab_gradient_dark)
-                    .into(((PPViewHolder) holder).binding.mainImageView);
+            if (!TextUtils.isEmpty(data.get(position).getPic().getKey())) {
+                Picasso.with(getContext())
+                        .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
+                        //.placeholder(R.drawable.ab_gradient_dark)
+                        .into(((PPViewHolder) holder).binding.mainImageView);
+            }
 
-            Picasso.with(getContext())
-                    .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
-                    //.placeholder(R.drawable.ab_gradient_dark)
-                    .into(((PPViewHolder) holder).binding.avatarCircleImageView);
+            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
+                Picasso.with(getContext())
+                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
+                        //.placeholder(R.drawable.ab_gradient_dark)
+                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
+            }
         }
 
         @Override

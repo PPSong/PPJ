@@ -29,8 +29,22 @@
     <style name="PPActionBar" parent="ThemeOverlay.AppCompat.ActionBar">
         <!-- Parent theme sets colorControlNormal to textColorPrimary. -->
         <item name="android:textColorPrimary">@android:color/white</item>
-        <item name="android:drawableTint">@android:color/white</item>
+        <!--<item name="android:drawableTint">@android:color/white</item>-->
 
+    </style>
+
+    <style name="InlineActionButton" parent="@android:style/Widget.Material.Button">
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:textAppearance">@style/TextAppearance.CommentAuthor</item>
+        <item name="android:drawablePadding">@dimen/spacing_micro</item>
+        <item name="android:background">?android:selectableItemBackgroundBorderless</item>
+    </style>
+
+    <style name="TextAppearance.CommentAuthor" parent="@android:style/TextAppearance.Material.Caption">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFeatureSettings">smcp, onum</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
 </resources>

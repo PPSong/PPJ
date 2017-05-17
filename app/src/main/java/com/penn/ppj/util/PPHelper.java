@@ -14,10 +14,13 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.penn.ppj.PPApplication;
 import com.penn.ppj.model.Geo;
+import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
 import com.penn.ppj.model.realm.Pic;
+import com.penn.ppj.model.realm.RelatedUser;
 import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.PicStatus;
+import com.penn.ppj.ppEnum.RelatedUserType;
 
 import org.json.JSONObject;
 
@@ -26,6 +29,9 @@ import java.util.regex.Pattern;
 import es.dmoral.toasty.Toasty;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
@@ -280,6 +286,8 @@ public class PPHelper {
                             baiduAk = tmpAk;
                             realm.commitTransaction();
                         }
+
+                        networkConnectNeedToRefresh();
                         return "OK";
                     }
                 });
@@ -301,7 +309,7 @@ public class PPHelper {
 
     private static String getImageUrl(String imageName, int size) {
         //容错
-        if (TextUtils.isEmpty(imageName)){
+        if (TextUtils.isEmpty(imageName)) {
             //pptodo 可以使用默认表示空白的图片
             return "";
         }
@@ -323,6 +331,16 @@ public class PPHelper {
         return noOfColumns;
     }
 
+    public static int calculateHeadMaxOffset(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        float height_16_9 = dpWidth * 9 / 16;
+        float height_4_3 = dpWidth * 3 / 4;
+        int result = (int) ((height_4_3 - height_16_9) * displayMetrics.density);
+
+        return result;
+    }
+
     public static Geo getLatestGeo() {
         //pptodo implement it
         return Geo.getDefaultGeo();
@@ -340,4 +358,180 @@ public class PPHelper {
         PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().remove(AUTH_BODY_KEY).apply();
     }
 
+    //包含所有网络获得链接后需要更新的事情
+    public static void networkConnectNeedToRefresh() {
+        //我的follow
+        PPJSONObject jBodyFollow = new PPJSONObject();
+        jBodyFollow
+                .put("before", "0");
+
+        final Observable<String> apiResultFollow = PPRetrofit.getInstance()
+                .api("friend.myFollows", jBodyFollow.getJSONObject());
+
+        apiResultFollow
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                new Consumer<String>() {
+                    @Override
+                    public void accept(@NonNull String s) throws Exception {
+                        PPWarn ppWarn = ppWarning(s);
+                        if (ppWarn != null) {
+                            throw new Exception(ppWarn.msg);
+                        }
+
+                        Log.v("pplog", "s1:" + s);
+
+                        try (Realm realm = Realm.getDefaultInstance()) {
+                            realm.beginTransaction();
+
+                            JsonArray ja = PPHelper.ppFromString(s, "data").getAsJsonArray();
+                            long now = System.currentTimeMillis();
+
+                            for (int i = 0; i < ja.size(); i++) {
+                                RelatedUser relatedUser = new RelatedUser();
+                                relatedUser.setType(RelatedUserType.FOLLOW);
+                                relatedUser.setUserId(PPHelper.ppFromString(s, "data." + i + ".id").getAsString());
+                                relatedUser.setId();
+                                relatedUser.setNickname(PPHelper.ppFromString(s, "data." + i + ".nickname").getAsString());
+                                relatedUser.setAvatar(PPHelper.ppFromString(s, "data." + i + ".head").getAsString());
+                                relatedUser.setCreateTime(PPHelper.ppFromString(s, "data." + i + ".time").getAsLong());
+                                relatedUser.setLastVisitTime(now);
+
+                                realm.insertOrUpdate(relatedUser);
+                            }
+
+                            //把服务器上已删除的user从本地删掉
+                            realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).notEqualTo("lastVisitTime", now).findAll().deleteAllFromRealm();
+
+                            realm.commitTransaction();
+                        }
+                    }
+                },
+                new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+                        error(throwable.toString());
+                    }
+                }
+        );
+
+        //我的fan
+        PPJSONObject jBodyFan = new PPJSONObject();
+        jBodyFan
+                .put("before", "0");
+
+        final Observable<String> apiResultFan= PPRetrofit.getInstance()
+                .api("friend.myFans", jBodyFan.getJSONObject());
+
+        apiResultFan
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                Log.v("pplog", "s2:" + s);
+
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.beginTransaction();
+
+                                    JsonArray ja = PPHelper.ppFromString(s, "data").getAsJsonArray();
+                                    long now = System.currentTimeMillis();
+
+                                    for (int i = 0; i < ja.size(); i++) {
+                                        RelatedUser relatedUser = new RelatedUser();
+                                        relatedUser.setType(RelatedUserType.FAN);
+                                        relatedUser.setUserId(PPHelper.ppFromString(s, "data." + i + ".id").getAsString());
+                                        relatedUser.setId();
+                                        relatedUser.setNickname(PPHelper.ppFromString(s, "data." + i + ".nickname").getAsString());
+                                        relatedUser.setAvatar(PPHelper.ppFromString(s, "data." + i + ".head").getAsString());
+                                        relatedUser.setCreateTime(PPHelper.ppFromString(s, "data." + i + ".time").getAsLong());
+                                        relatedUser.setLastVisitTime(now);
+
+                                        realm.insertOrUpdate(relatedUser);
+                                    }
+
+                                    //把服务器上已删除的user从本地删掉
+                                    realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FAN.toString()).notEqualTo("lastVisitTime", now).findAll().deleteAllFromRealm();
+
+                                    realm.commitTransaction();
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                error(throwable.toString());
+                            }
+                        }
+                );
+
+        //我的friend
+        PPJSONObject jBodyFriend = new PPJSONObject();
+        jBodyFriend
+                .put("needInfo", "1");
+
+        final Observable<String> apiResultFriend= PPRetrofit.getInstance()
+                .api("friend.mine", jBodyFriend.getJSONObject());
+
+        apiResultFriend
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                Log.v("pplog", "s3:" + s);
+
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.beginTransaction();
+
+                                    JsonArray ja = PPHelper.ppFromString(s, "data.list").getAsJsonArray();
+                                    long now = System.currentTimeMillis();
+
+                                    for (int i = 0; i < ja.size(); i++) {
+                                        RelatedUser relatedUser = new RelatedUser();
+                                        relatedUser.setType(RelatedUserType.FRIEND);
+                                        relatedUser.setUserId(PPHelper.ppFromString(s, "data.list." + i + ".id").getAsString());
+                                        relatedUser.setId();
+                                        relatedUser.setNickname(PPHelper.ppFromString(s, "data.list." + i + ".nickname").getAsString());
+                                        relatedUser.setAvatar(PPHelper.ppFromString(s, "data.list." + i + ".head").getAsString());
+                                        relatedUser.setCreateTime(PPHelper.ppFromString(s, "data.list." + i + ".time").getAsLong());
+                                        relatedUser.setLastVisitTime(now);
+
+                                        realm.insertOrUpdate(relatedUser);
+                                    }
+
+                                    //把服务器上已删除的user从本地删掉
+                                    realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FRIEND.toString()).notEqualTo("lastVisitTime", now).findAll().deleteAllFromRealm();
+
+                                    realm.commitTransaction();
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                error(throwable.toString());
+                            }
+                        }
+                );
+
+
+        //我的notification
+
+        //我的dashboard moment
+
+    }
 }

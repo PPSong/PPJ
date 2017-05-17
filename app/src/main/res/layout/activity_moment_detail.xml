@@ -23,22 +23,16 @@
 
         <ImageView
             android:id="@+id/main_image_view"
-            app:imageUrl="@{data.getPic()}"
+            app:imageUrl="@{data.pic}"
             app:layout_aspectRatio="133%"
             app:layout_widthPercent="100%" />
-
-        <TextView
-            android:id="@+id/main_tv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@{data.getContent()}" />
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/like_floating_action_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/fab_margin"
+            android:layout_gravity="end"
+            android:layout_marginRight="@dimen/common"
             app:srcCompat="@drawable/ic_favorite_border_black_24dp" />
 
     </android.support.percent.PercentFrameLayout>

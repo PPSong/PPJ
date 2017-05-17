@@ -9,4 +9,7 @@
     <dimen name="common">16dp</dimen>
 
     <dimen name="spacing_micro">4dp</dimen>
+
+    <dimen name="avatar_big">64dp</dimen>
+    <dimen name="avatar">48dp</dimen>
 </resources>

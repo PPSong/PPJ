@@ -26,7 +26,8 @@
         <activity
             android:name=".MomentDetailActivity"
             android:label="@string/title_activity_moment_detail"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme" />
+        <activity android:name=".UserHomePageActivity"></activity>
     </application>
 
 </manifest>

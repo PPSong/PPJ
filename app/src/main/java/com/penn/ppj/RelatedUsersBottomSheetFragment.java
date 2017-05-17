@@ -1,6 +1,7 @@
 package com.penn.ppj;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.os.Bundle;
@@ -20,7 +21,9 @@ import com.penn.ppj.databinding.MomentDetailHeadBinding;
 import com.penn.ppj.databinding.RelatedUserBottomSheetBinding;
 import com.penn.ppj.databinding.RelatedUserCellBinding;
 import com.penn.ppj.model.realm.Comment;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.RelatedUser;
+import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.RelatedUserType;
 
 import java.util.List;
@@ -45,6 +48,7 @@ public class RelatedUsersBottomSheetFragment extends BottomSheetDialogFragment {
     private RealmResults<RelatedUser> relatedUsers;
     private PPAdapter ppAdapter;
     private LinearLayoutManager linearLayoutManager;
+    private View.OnClickListener relatedUserOnClickListener;
 
     class PPAdapter extends RecyclerView.Adapter<PPAdapter.PPViewHolder> {
         private List<RelatedUser> data;
@@ -67,7 +71,7 @@ public class RelatedUsersBottomSheetFragment extends BottomSheetDialogFragment {
 
             RelatedUserCellBinding relatedUserCellBinding = RelatedUserCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
 
-            // relatedUserCellBinding.getRoot().setOnClickListener(relatedUserOnClickListener);
+            relatedUserCellBinding.getRoot().setOnClickListener(relatedUserOnClickListener);
 
             return new PPViewHolder(relatedUserCellBinding);
 
@@ -128,6 +132,17 @@ public class RelatedUsersBottomSheetFragment extends BottomSheetDialogFragment {
         relatedUsers = realm.where(RelatedUser.class).equalTo("type", relatedUserType.toString()).findAllSorted("createTime", Sort.DESCENDING);
 
         linearLayoutManager = new LinearLayoutManager(getContext());
+
+        relatedUserOnClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+                RelatedUser relatedUser = relatedUsers.get(position);
+                Intent intent = new Intent(getContext(), UserHomePageActivity.class);
+                intent.putExtra("userId", relatedUser.getUserId());
+                startActivity(intent);
+            }
+        };
 
         binding = DataBindingUtil.inflate(
                 inflater, R.layout.related_user_bottom_sheet, container, false);

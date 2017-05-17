@@ -2,10 +2,15 @@ package com.penn.ppj.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.gson.JsonArray;
@@ -13,6 +18,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.penn.ppj.PPApplication;
+import com.penn.ppj.R;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
@@ -21,6 +27,8 @@ import com.penn.ppj.model.realm.RelatedUser;
 import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import org.json.JSONObject;
 
@@ -37,6 +45,8 @@ import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
+
+import static com.penn.ppj.PPApplication.getContext;
 
 /**
  * Created by penn on 13/05/2017.
@@ -205,7 +215,7 @@ public class PPHelper {
                             throw new Exception(ppWarn.msg);
                         }
 
-                        initRealm(PPApplication.getContext(), phone);
+                        initRealm(getContext(), phone);
 
                         try (Realm realm = Realm.getDefaultInstance()) {
 
@@ -295,7 +305,7 @@ public class PPHelper {
 
     public static void error(String error) {
         Log.v("pplog", error);
-        Toasty.error(PPApplication.getContext(), error, Toast.LENGTH_LONG, true).show();
+        Toasty.error(getContext(), error, Toast.LENGTH_LONG, true).show();
     }
 
 
@@ -347,15 +357,15 @@ public class PPHelper {
     }
 
     public static void setPrefStringValue(String key, String value) {
-        PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().putString(key, value).apply();
+        getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().putString(key, value).apply();
     }
 
     public static String getPrefStringValue(String key, String defaultValue) {
-        return PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).getString(key, defaultValue);
+        return getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).getString(key, defaultValue);
     }
 
     public static void removePrefItem(String key) {
-        PPApplication.getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().remove(AUTH_BODY_KEY).apply();
+        getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().remove(AUTH_BODY_KEY).apply();
     }
 
     //包含所有网络获得链接后需要更新的事情
@@ -372,56 +382,56 @@ public class PPHelper {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                new Consumer<String>() {
-                    @Override
-                    public void accept(@NonNull String s) throws Exception {
-                        PPWarn ppWarn = ppWarning(s);
-                        if (ppWarn != null) {
-                            throw new Exception(ppWarn.msg);
-                        }
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
 
-                        Log.v("pplog", "s1:" + s);
+                                Log.v("pplog", "s1:" + s);
 
-                        try (Realm realm = Realm.getDefaultInstance()) {
-                            realm.beginTransaction();
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.beginTransaction();
 
-                            JsonArray ja = PPHelper.ppFromString(s, "data").getAsJsonArray();
-                            long now = System.currentTimeMillis();
+                                    JsonArray ja = PPHelper.ppFromString(s, "data").getAsJsonArray();
+                                    long now = System.currentTimeMillis();
 
-                            for (int i = 0; i < ja.size(); i++) {
-                                RelatedUser relatedUser = new RelatedUser();
-                                relatedUser.setType(RelatedUserType.FOLLOW);
-                                relatedUser.setUserId(PPHelper.ppFromString(s, "data." + i + ".id").getAsString());
-                                relatedUser.setId();
-                                relatedUser.setNickname(PPHelper.ppFromString(s, "data." + i + ".nickname").getAsString());
-                                relatedUser.setAvatar(PPHelper.ppFromString(s, "data." + i + ".head").getAsString());
-                                relatedUser.setCreateTime(PPHelper.ppFromString(s, "data." + i + ".time").getAsLong());
-                                relatedUser.setLastVisitTime(now);
+                                    for (int i = 0; i < ja.size(); i++) {
+                                        RelatedUser relatedUser = new RelatedUser();
+                                        relatedUser.setType(RelatedUserType.FOLLOW);
+                                        relatedUser.setUserId(PPHelper.ppFromString(s, "data." + i + ".id").getAsString());
+                                        relatedUser.setId();
+                                        relatedUser.setNickname(PPHelper.ppFromString(s, "data." + i + ".nickname").getAsString());
+                                        relatedUser.setAvatar(PPHelper.ppFromString(s, "data." + i + ".head").getAsString());
+                                        relatedUser.setCreateTime(PPHelper.ppFromString(s, "data." + i + ".time").getAsLong());
+                                        relatedUser.setLastVisitTime(now);
 
-                                realm.insertOrUpdate(relatedUser);
+                                        realm.insertOrUpdate(relatedUser);
+                                    }
+
+                                    //把服务器上已删除的user从本地删掉
+                                    realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).notEqualTo("lastVisitTime", now).findAll().deleteAllFromRealm();
+
+                                    realm.commitTransaction();
+                                }
                             }
-
-                            //把服务器上已删除的user从本地删掉
-                            realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).notEqualTo("lastVisitTime", now).findAll().deleteAllFromRealm();
-
-                            realm.commitTransaction();
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                error(throwable.toString());
+                            }
                         }
-                    }
-                },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(@NonNull Throwable throwable) throws Exception {
-                        error(throwable.toString());
-                    }
-                }
-        );
+                );
 
         //我的fan
         PPJSONObject jBodyFan = new PPJSONObject();
         jBodyFan
                 .put("before", "0");
 
-        final Observable<String> apiResultFan= PPRetrofit.getInstance()
+        final Observable<String> apiResultFan = PPRetrofit.getInstance()
                 .api("friend.myFans", jBodyFan.getJSONObject());
 
         apiResultFan
@@ -477,7 +487,7 @@ public class PPHelper {
         jBodyFriend
                 .put("needInfo", "1");
 
-        final Observable<String> apiResultFriend= PPRetrofit.getInstance()
+        final Observable<String> apiResultFriend = PPRetrofit.getInstance()
                 .api("friend.mine", jBodyFriend.getJSONObject());
 
         apiResultFriend
@@ -533,5 +543,42 @@ public class PPHelper {
 
         //我的dashboard moment
 
+    }
+
+    public static void setImageViewResource(final ImageView imageView, String pic, int size) {
+        if (TextUtils.isEmpty(pic)) {
+            return;
+        }
+
+        if (size == 80) {
+            String picUrl = get80ImageUrl(pic);
+            Picasso.with(getContext())
+                    .load(picUrl)
+                    .into(imageView);
+        } else {
+            //default
+            String picUrl = get800ImageUrl(pic);
+            Picasso.with(getContext())
+                    .load(picUrl)
+                    .into(new Target() {
+                        //pptodo 改进取色方案
+                        @Override
+                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+                    /* Save the bitmap or do something with it here */
+                            Palette p = Palette.from(bitmap).generate();
+                            //Set it in the ImageView
+                            imageView.setImageBitmap(bitmap);
+                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
+                        }
+
+                        @Override
+                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+                        }
+
+                        @Override
+                        public void onBitmapFailed(Drawable errorDrawable) {
+                        }
+                    });
+        }
     }
 }

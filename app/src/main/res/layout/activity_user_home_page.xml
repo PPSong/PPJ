@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.penn.ppj.UserHomePageActivity">
+
+    <data>
+
+        <variable
+            name="data"
+            type="com.penn.ppj.model.realm.UserHomePage" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/avatar_image_view"
+            android:layout_width="@dimen/avatar_big"
+            android:layout_height="@dimen/avatar_big" />
+
+        <TextView
+            android:id="@+id/nickname_text_view"
+            android:text="@{data.nickname}"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ToggleButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="@{data.followed}"
+            android:text="@string/follow" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:id="@+id/likes_button"
+                style="@style/InlineActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/avd_likes"
+                tools:text="33 likes" />
+
+            <Button
+                android:id="@+id/views_button"
+                style="@style/InlineActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/avd_views"
+                tools:text="33 views" />
+
+            <Button
+                android:id="@+id/share_button"
+                style="@style/InlineActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/avd_share"
+                tools:text="33 views" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</layout>

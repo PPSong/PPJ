@@ -113,6 +113,7 @@ public class MomentDetailActivity extends AppCompatActivity {
             public PPHead(MomentDetailHeadBinding binding) {
                 super(binding.getRoot());
                 this.binding = binding;
+                binding.setData(momentDetail);
             }
         }
 
@@ -276,38 +277,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         realm.close();
         super.onDestroy();
     }
-
-    @BindingAdapter({"bind:imageUrl"})
-    public static void setImageViewResource(final ImageView imageView, String pic) {
-        if (TextUtils.isEmpty(pic)) {
-            return;
-        }
-
-        Picasso.with(getContext())
-                .load(PPHelper.get800ImageUrl(pic))
-                .into(new Target() {
-                    //pptodo 改进取色方案
-                    @Override
-                    public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                    /* Save the bitmap or do something with it here */
-                        Palette p = Palette.from(bitmap).generate();
-                        //Set it in the ImageView
-                        imageView.setImageBitmap(bitmap);
-                        imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-                    }
-
-                    @Override
-                    public void onBitmapFailed(Drawable errorDrawable) {
-                    }
-                });
-
-
-    }
-
+    
     private void getMomentDetail() {
         //读取本地MomentDetail记录
         try (Realm realm = Realm.getDefaultInstance()) {

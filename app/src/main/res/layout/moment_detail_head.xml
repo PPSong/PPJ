@@ -84,6 +84,7 @@
 
                 <com.github.curioustechizen.ago.RelativeTimeTextView
                     android:id="@+id/createTime_relative_time_text_view"
+                    app:pp_reference_time="@{data.createTime}"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 

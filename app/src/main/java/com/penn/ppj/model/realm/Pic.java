@@ -23,8 +23,8 @@ public class Pic extends RealmObject {
         this.key = key;
     }
 
-    public String getStatus() {
-        return status;
+    public PicStatus getStatus() {
+        return PicStatus.valueOf(status);
     }
 
     public void setStatus(PicStatus status) {

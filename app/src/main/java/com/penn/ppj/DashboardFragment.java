@@ -158,15 +158,16 @@ public class DashboardFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(PPAdapter.PPHoldView holder, int position) {
-            Picasso.with(getContext())
-                    .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
-                    //.placeholder(R.drawable.ab_gradient_dark)
-                    .into(holder.binding.mainImageView);
-
-            Picasso.with(getContext())
-                    .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
-                    //.placeholder(R.drawable.ab_gradient_dark)
-                    .into(holder.binding.avatarCircleImageView);
+            holder.binding.setData(data.get(position));
+//            Picasso.with(getContext())
+//                    .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
+//                    //.placeholder(R.drawable.ab_gradient_dark)
+//                    .into(holder.binding.mainImageView);
+//
+//            Picasso.with(getContext())
+//                    .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
+//                    //.placeholder(R.drawable.ab_gradient_dark)
+//                    .into(holder.binding.avatarCircleImageView);
         }
 
         @Override

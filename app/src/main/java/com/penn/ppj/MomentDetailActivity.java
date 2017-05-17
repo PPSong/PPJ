@@ -86,6 +86,8 @@ public class MomentDetailActivity extends AppCompatActivity {
 
     private LinearLayoutManager linearLayoutManager;
 
+    private MomentDetailHeadBinding momentDetailHeadBinding;
+
     private final View.OnClickListener commentOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -124,36 +126,38 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            Log.v("pplog", "onCreateViewHolder");
             if (viewType == HEAD) {
-                final MomentDetailHeadBinding momentDetailHeadBinding = MomentDetailHeadBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
-                momentDetailHeadBinding.likesButton.setOnClickListener(new View.OnClickListener() {
+                final MomentDetailHeadBinding tmpMomentDetailHeadBinding = MomentDetailHeadBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+                tmpMomentDetailHeadBinding.likesButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((AnimatedVectorDrawable) momentDetailHeadBinding.likesButton.getCompoundDrawables()[1]).start();
+                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.likesButton.getCompoundDrawables()[1]).start();
                         //pptodo if users > 0
                         showRelatedUsers(RelatedUserType.FAN);
                     }
                 });
 
-                momentDetailHeadBinding.viewsButton.setOnClickListener(new View.OnClickListener() {
+                tmpMomentDetailHeadBinding.viewsButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((AnimatedVectorDrawable) momentDetailHeadBinding.viewsButton.getCompoundDrawables()[1]).start();
+                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.viewsButton.getCompoundDrawables()[1]).start();
                         //pptodo if users > 0
                         showRelatedUsers(RelatedUserType.FOLLOW);
                     }
                 });
 
-                momentDetailHeadBinding.shareButton.setOnClickListener(new View.OnClickListener() {
+                tmpMomentDetailHeadBinding.shareButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((AnimatedVectorDrawable) momentDetailHeadBinding.shareButton.getCompoundDrawables()[1]).start();
+                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.shareButton.getCompoundDrawables()[1]).start();
                         //pptodo if users > 0
                         showRelatedUsers(RelatedUserType.FRIEND);
                     }
                 });
 
-                return new PPHead(momentDetailHeadBinding);
+                momentDetailHeadBinding = tmpMomentDetailHeadBinding;
+                return new PPHead(tmpMomentDetailHeadBinding);
             } else if (viewType == COMMENT) {
                 CommentCellBinding commentCellBinding = CommentCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
 
@@ -202,6 +206,7 @@ public class MomentDetailActivity extends AppCompatActivity {
             public void onChange(MomentDetail element) {
                 Log.v("pplog", element.getId() + "," + element.getContent());
                 binding.setData(element);
+                momentDetailHeadBinding.setData(element);
             }
         };
 
@@ -261,16 +266,21 @@ public class MomentDetailActivity extends AppCompatActivity {
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 //        setSupportActionBar(toolbar);
 
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
+        binding.likeFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getMomentDetail();
+            }
+        });
 
-        getMomentDetail();
+        //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
+        //这里不用延时的话会导致momentDetailHeadBinding null错误
+        binding.mainRecyclerView.post(new Runnable() {
+            @Override
+            public void run() {
+                getMomentDetail();
+            }
+        });
     }
 
     @Override
@@ -280,7 +290,9 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void setupBindingData(MomentDetail momentDetail) {
+        Log.v("pplog", "setupBindingData start");
         if (momentDetail == null) {
+            Log.v("pplog", "setupBindingData cancel");
             return;
         }
 
@@ -288,25 +300,31 @@ public class MomentDetailActivity extends AppCompatActivity {
             if (this.momentDetail == null) {
                 this.momentDetail = momentDetail;
                 this.momentDetail.addChangeListener(momentDetailChangeListener);
+                Log.v("pplog", "setupBindingData ok");
                 binding.setData(this.momentDetail);
+                momentDetailHeadBinding.setData(this.momentDetail);
+            } else {
+                Log.v("pplog", "setupBindingData this.momentDetail != null");
             }
         }
     }
 
     private void getMomentDetail() {
         //读取本地MomentDetail记录
-        momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
+        MomentDetail tmpMomentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
 
-        setupBindingData(momentDetail);
-
-        if (momentDetail != null) {
+        if (tmpMomentDetail != null) {
             try (Realm realm = Realm.getDefaultInstance()) {
 
                 realm.beginTransaction();
-                momentDetail.setLastVisitTime(System.currentTimeMillis());
+
+                tmpMomentDetail.setLastVisitTime(System.currentTimeMillis());
+
                 realm.commitTransaction();
             }
         }
+
+        setupBindingData(tmpMomentDetail);
 
         //请求服务器最新MomentDetail记录
         PPJSONObject jBody1 = new PPJSONObject();

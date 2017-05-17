@@ -189,7 +189,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -311,6 +311,10 @@ public class PPHelper {
 
     public static String get80ImageUrl(String imageName) {
         return getImageUrl(imageName, 80);
+    }
+
+    public static String get180ImageUrl(String imageName) {
+        return getImageUrl(imageName, 180);
     }
 
     public static String get800ImageUrl(String imageName) {
@@ -547,38 +551,51 @@ public class PPHelper {
 
     public static void setImageViewResource(final ImageView imageView, String pic, int size) {
         if (TextUtils.isEmpty(pic)) {
+            Log.v("pplog", "isEmpty");
             return;
         }
 
-        if (size == 80) {
-            String picUrl = get80ImageUrl(pic);
-            Picasso.with(getContext())
-                    .load(picUrl)
-                    .into(imageView);
-        } else {
-            //default
+        if (size == 800) {
+            Log.v("pplog", "800");
             String picUrl = get800ImageUrl(pic);
             Picasso.with(getContext())
                     .load(picUrl)
-                    .into(new Target() {
-                        //pptodo 改进取色方案
-                        @Override
-                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                    /* Save the bitmap or do something with it here */
-                            Palette p = Palette.from(bitmap).generate();
-                            //Set it in the ImageView
-                            imageView.setImageBitmap(bitmap);
-                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Drawable errorDrawable) {
-                        }
-                    });
+                    .error(R.mipmap.ic_launcher)
+                    .into(imageView);
+//                    .into(new Target() {
+//                        //pptodo 改进取色方案
+//                        @Override
+//                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+//                    /* Save the bitmap or do something with it here */
+//                            Palette p = Palette.from(bitmap).generate();
+//                            //Set it in the ImageView
+//                            imageView.setImageBitmap(bitmap);
+//                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
+//                        }
+//
+//                        @Override
+//                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+//                        }
+//
+//                        @Override
+//                        public void onBitmapFailed(Drawable errorDrawable) {
+//                        }
+//                    });
+        } else if (size == 180) {
+            Log.v("pplog", "180");
+            String picUrl = get180ImageUrl(pic);
+            Picasso.with(getContext())
+                    .load(picUrl)
+                    .error(R.mipmap.ic_launcher)
+                    .into(imageView);
+        } else {
+            //default
+            Log.v("pplog", "80");
+            String picUrl = get80ImageUrl(pic);
+            Picasso.with(getContext())
+                    .load(picUrl)
+                    .error(R.mipmap.ic_launcher)
+                    .into(imageView);
         }
     }
 }

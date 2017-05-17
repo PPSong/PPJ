@@ -6,6 +6,9 @@ import android.databinding.BindingAdapter;
 import android.util.Log;
 import android.widget.ImageView;
 
+import com.github.curioustechizen.ago.RelativeTimeTextView;
+import com.penn.ppj.model.realm.Pic;
+import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.util.PPHelper;
 
 import io.realm.Realm;
@@ -30,12 +33,31 @@ public class PPApplication extends Application {
 
     @BindingAdapter({"bind:imageUrl"})
     public static void setImageViewResource(final ImageView imageView, String pic) {
+        Log.v("pplog", "imageUrl");
         PPHelper.setImageViewResource(imageView, pic, 800);
     }
 
     @BindingAdapter({"bind:avatarImageUrl"})
     public static void setAvatarImageViewResource(final ImageView imageView, String pic) {
-        Log.v("pploge", "setAvatarImageViewResource");
+        Log.v("pplog", "avatarImageUrl");
         PPHelper.setImageViewResource(imageView, pic, 80);
+    }
+
+    @BindingAdapter({"bind:imagePicUrl"})
+    public static void setImagePicViewResource(final ImageView imageView, Pic pic) {
+        if (pic.getStatus() == PicStatus.NET) {
+            Log.v("pplog", "imagePicUrl");
+            PPHelper.setImageViewResource(imageView, pic.getKey(), 180);
+        }
+        //pptodo load local image
+    }
+
+    @BindingAdapter({"bind:pp_reference_time"})
+    public static void setTimeAgo(final RelativeTimeTextView relativeTimeTextView, long time) {
+        Log.v("pplog", "setTimeAgo");
+        if (time > 0) {
+            relativeTimeTextView.setReferenceTime(time);
+        }
+        Log.v("pplog", "setTimeAgo 0");
     }
 }

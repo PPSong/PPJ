@@ -2,6 +2,12 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <data>
+        <variable
+            name="data"
+            type="com.penn.ppj.model.realm.Moment" />
+    </data>
+
     <android.support.percent.PercentFrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -9,6 +15,7 @@
         <ImageView
             android:id="@+id/main_image_view"
             android:scaleType="centerCrop"
+            app:imagePicUrl="@{data.pic}"
             app:layout_widthPercent="100%"
             app:layout_aspectRatio="133%" />
 
@@ -17,6 +24,7 @@
             android:layout_gravity="end"
             android:scaleType="centerCrop"
             android:id="@+id/avatar_circle_image_view"
+            app:avatarImageUrl="@{data.avatar}"
             android:layout_width="48dp"
             android:layout_height="48dp" />
 

@@ -49,6 +49,15 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         UserHomePage tmpUserHomePage = realm.where(UserHomePage.class).equalTo("userId", userId).findFirst();
 
+        if (tmpUserHomePage != null) {
+            try (Realm realm = Realm.getDefaultInstance()) {
+
+                realm.beginTransaction();
+                tmpUserHomePage.setLastVisitTime(System.currentTimeMillis());
+                realm.commitTransaction();
+            }
+        }
+
         userHomePageChangeListener = new RealmChangeListener<UserHomePage>() {
             @Override
             public void onChange(UserHomePage element) {

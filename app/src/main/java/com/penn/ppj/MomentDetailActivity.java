@@ -32,6 +32,7 @@ import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.Pic;
+import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
@@ -277,20 +278,32 @@ public class MomentDetailActivity extends AppCompatActivity {
         realm.close();
         super.onDestroy();
     }
-    
+
+    private void setupBindingData(MomentDetail momentDetail) {
+        if (momentDetail == null) {
+            return;
+        }
+
+        synchronized (this) {
+            if (this.momentDetail == null) {
+                this.momentDetail = momentDetail;
+                this.momentDetail.addChangeListener(momentDetailChangeListener);
+                binding.setData(this.momentDetail);
+            }
+        }
+    }
+
     private void getMomentDetail() {
         //读取本地MomentDetail记录
-        try (Realm realm = Realm.getDefaultInstance()) {
-            momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
+        momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
 
-            if (momentDetail != null) {
-                binding.setData(momentDetail);
-                momentDetail.addChangeListener(momentDetailChangeListener);
-                //如本地有记录, 修改lastVisitTime
+        setupBindingData(momentDetail);
+
+        if (momentDetail != null) {
+            try (Realm realm = Realm.getDefaultInstance()) {
+
                 realm.beginTransaction();
-
                 momentDetail.setLastVisitTime(System.currentTimeMillis());
-
                 realm.commitTransaction();
             }
         }
@@ -346,9 +359,7 @@ public class MomentDetailActivity extends AppCompatActivity {
                                 processMomentDetailAndComments(result[0], result[1]);
 
                                 if (momentDetail == null) {
-                                    momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
-                                    binding.setData(momentDetail);
-                                    momentDetail.addChangeListener(momentDetailChangeListener);
+                                    setupBindingData(realm.where(MomentDetail.class).equalTo("id", momentId).findFirst());
                                 }
                             }
                         }

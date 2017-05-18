@@ -3,6 +3,8 @@ package com.penn.ppj;
 import android.app.Application;
 import android.content.Context;
 import android.databinding.BindingAdapter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -35,6 +37,17 @@ public class PPApplication extends Application {
     public static void setImageViewResource(final ImageView imageView, String pic) {
         Log.v("pplog", "imageUrl");
         PPHelper.setImageViewResource(imageView, pic, 800);
+    }
+
+    @BindingAdapter({"bind:imageData"})
+    public static void setImageViewDataResource(final ImageView imageView, byte[] pic) {
+        Log.v("pplog", "imageData");
+        if (pic == null) {
+            imageView.setImageResource(android.R.color.transparent);
+            return;
+        }
+        Bitmap bmp = BitmapFactory.decodeByteArray(pic, 0, pic.length);
+        imageView.setImageBitmap(bmp);
     }
 
     @BindingAdapter({"bind:avatarImageUrl"})

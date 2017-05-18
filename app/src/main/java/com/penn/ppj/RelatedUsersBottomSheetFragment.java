@@ -115,7 +115,7 @@ public class RelatedUsersBottomSheetFragment extends BottomSheetDialogFragment {
     @Override
     public void setupDialog(final Dialog dialog, int style) {
         Log.v("pplog", "setupDialog");
-        super.setupDialog(dialog, style);
+        //super.setupDialog(dialog, style);
         //View contentView = View.inflate(getContext(), R.layout.related_user_bottom_sheet, null);
         this.dialog = dialog;
     }

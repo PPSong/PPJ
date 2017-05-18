@@ -19,7 +19,12 @@ import com.jph.takephoto.model.TImage;
 import com.jph.takephoto.model.TResult;
 import com.penn.ppj.databinding.ActivityCreateMomentBinding;
 import com.penn.ppj.model.Geo;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
+import com.penn.ppj.model.realm.MomentDetail;
+import com.penn.ppj.model.realm.Pic;
+import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.util.PPHelper;
 
 import java.io.BufferedInputStream;
@@ -46,25 +51,26 @@ public class CreateMomentActivity extends TakePhotoActivity {
     private ActivityCreateMomentBinding binding;
     private Realm realm;
     private MomentCreating momentCreating;
+    private RealmChangeListener<MomentCreating> changeListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_create_moment);
 
-        realm = Realm.getDefaultInstance();
-
-        momentCreating = realm.where(MomentCreating.class).findFirst();
         binding.setData(momentCreating);
-        binding.contentTextInputEditText.setText(momentCreating.getContent());
 
-        momentCreating.addChangeListener(new RealmChangeListener<MomentCreating>() {
+        changeListener = new RealmChangeListener<MomentCreating>() {
             @Override
             public void onChange(MomentCreating element) {
                 binding.setData(element);
                 validatePublish();
             }
-        });
+        };
+
+        realm = Realm.getDefaultInstance();
+
+        setupBindingData();
 
         setup();
     }
@@ -130,6 +136,28 @@ public class CreateMomentActivity extends TakePhotoActivity {
         getCurLocation();
     }
 
+    private void setupBindingData() {
+        momentCreating = realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findFirst();
+        Log.v("pplog", "setupBindingData start");
+        if (momentCreating == null) {
+            realm.beginTransaction();
+
+            MomentCreating newOne = new MomentCreating();
+            newOne.setId();
+            newOne.setStatus(MomentStatus.PREPARE);
+
+            realm.copyToRealm(newOne);
+
+            realm.commitTransaction();
+
+            momentCreating = realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findFirst();
+        }
+
+        momentCreating.addChangeListener(changeListener);
+        binding.setData(momentCreating);
+        binding.contentTextInputEditText.setText(momentCreating.getContent());
+    }
+
     private void getCurLocation() {
         Geo geo = PPHelper.getLatestGeo();
         realm.beginTransaction();
@@ -185,10 +213,23 @@ public class CreateMomentActivity extends TakePhotoActivity {
         realm.beginTransaction();
 
         //把momentCreating放入Moment
+        Moment moment = new Moment();
+        moment.setId(momentCreating.getId());
+        moment.setCreateTime(momentCreating.getCreateTime());
+        moment.setStatus(MomentStatus.LOCAL);
+        Pic pic = new Pic();
+        pic.setKey(momentCreating.getId() + "_" + 0);
+        pic.setStatus(PicStatus.LOCAL);
+        pic.setLocalData(momentCreating.getPic());
+        moment.setPic(pic);
 
-        momentCreating.clear();
+        realm.copyToRealm(moment);
+
+        //修改momentCreating放入Moment状态
+        momentCreating.setStatus(MomentStatus.LOCAL);
         realm.commitTransaction();
         binding.contentTextInputEditText.setText("");
+
         finish();
     }
 }

@@ -61,8 +61,11 @@ public class PPApplication extends Application {
         if (pic.getStatus() == PicStatus.NET) {
             Log.v("pplog", "imagePicUrl");
             PPHelper.setImageViewResource(imageView, pic.getKey(), 180);
+        } else {
+            byte[] data = pic.getLocalData();
+            Bitmap bmp = BitmapFactory.decodeByteArray(data, 0, data.length);
+            imageView.setImageBitmap(bmp);
         }
-        //pptodo load local image
     }
 
     @BindingAdapter({"bind:pp_reference_time"})

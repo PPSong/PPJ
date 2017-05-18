@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.util.PPHelper;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -17,32 +18,37 @@ import java.io.IOException;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
+import static java.lang.System.currentTimeMillis;
+
 /**
  * Created by penn on 15/05/2017.
  */
 
 public class MomentCreating extends RealmObject {
     @PrimaryKey
-    private String id;
+    private String id; //createTime_creatorUserId for local new moment
     private long createTime;
     private byte[] pic;
     private String content;
     private String geo; //lon,lat
     private String address;
+    private String status;
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId() {
+        long now = System.currentTimeMillis();
+        this.id = now + "_" + PPHelper.currentUserId;
+        setCreateTime(now);
     }
 
     public long getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(long createTime) {
+    private void setCreateTime(long createTime) {
         this.createTime = createTime;
     }
 
@@ -100,6 +106,15 @@ public class MomentCreating extends RealmObject {
         this.address = address;
     }
 
+    public MomentStatus getStatus() {
+        return MomentStatus.valueOf(status);
+    }
+
+    public void setStatus(MomentStatus status) {
+        this.status = status.toString();
+    }
+
+    //-----helper-----
     public String validatePublish() {
         if (pic == null || pic.length == 0) {
             return "图片不能为空";
@@ -122,13 +137,5 @@ public class MomentCreating extends RealmObject {
         }
 
         return "OK";
-    }
-
-    public void clear() {
-        setCreateTime(0);
-        setPic(null);
-        setContent(null);
-        setGeo(null);
-        setAddress(null);
     }
 }

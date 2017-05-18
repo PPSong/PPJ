@@ -190,7 +190,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -233,15 +233,6 @@ public class PPHelper {
                             currentUser.setTokenTimestamp(ppFromString(s, "data.tokentimestamp").getAsLong());
 
                             realm.copyToRealmOrUpdate(currentUser);
-
-                            //如果MomentCreating不存在, 新建一个
-                            MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", "1").findFirst();
-                            if (momentCreating == null) {
-                                MomentCreating newOne = new MomentCreating();
-                                newOne.setId("1");
-
-                                realm.copyToRealm(newOne);
-                            }
 
                             realm.commitTransaction();
 

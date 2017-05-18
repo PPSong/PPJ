@@ -11,11 +11,20 @@ import io.realm.annotations.PrimaryKey;
 
 public class NearbyMoment extends RealmObject {
     @PrimaryKey
-    private String id; //createTime_creatorUserId for local new moment
+    private String key;//createTime_creatorUserId for local new moment
+    private String id;
     private long createTime;
     private String status;
     private Pic pic;
     private String avatar;
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 
     public String getId() {
         return id;

@@ -1,6 +1,15 @@
 package com.penn.ppj.model.realm;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Log;
+
+import com.penn.ppj.PPApplication;
 import com.penn.ppj.ppEnum.PicStatus;
+import com.penn.ppj.util.PPHelper;
+import com.squareup.picasso.Picasso;
+
+import java.io.ByteArrayOutputStream;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -14,6 +23,7 @@ public class Pic extends RealmObject {
     private String key; //netFileName or createTime_userId_index
     private String status;
     private byte[] localData;
+    private byte[] thumbLocalData;
 
     public String getKey() {
         return key;
@@ -36,6 +46,29 @@ public class Pic extends RealmObject {
     }
 
     public void setLocalData(byte[] localData) {
+
+        long now = System.currentTimeMillis();
+
         this.localData = localData;
+
+        Bitmap bmp = BitmapFactory.decodeByteArray(localData, 0, localData.length);
+
+        Bitmap thumbBmp = PPHelper.resize(bmp, 180, 180);
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        thumbBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+
+        byte[] byteArray = stream.toByteArray();
+
+        setThumbLocalData(byteArray);
+    }
+
+    public byte[] getThumbLocalData() {
+        return thumbLocalData;
+    }
+
+    public void setThumbLocalData(byte[] thumbLocalData) {
+        this.thumbLocalData = thumbLocalData;
     }
 }

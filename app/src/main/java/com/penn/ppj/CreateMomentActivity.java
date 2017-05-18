@@ -18,6 +18,7 @@ import com.jph.takephoto.compress.CompressConfig;
 import com.jph.takephoto.model.TImage;
 import com.jph.takephoto.model.TResult;
 import com.penn.ppj.databinding.ActivityCreateMomentBinding;
+import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
@@ -26,6 +27,8 @@ import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.util.PPHelper;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -63,8 +66,11 @@ public class CreateMomentActivity extends TakePhotoActivity {
         changeListener = new RealmChangeListener<MomentCreating>() {
             @Override
             public void onChange(MomentCreating element) {
-                binding.setData(element);
-                validatePublish();
+                //使用isValid()来避免对已删除的记录进行操作
+                if (element.isValid()) {
+                    binding.setData(element);
+                    validatePublish();
+                }
             }
         };
 
@@ -210,11 +216,11 @@ public class CreateMomentActivity extends TakePhotoActivity {
     }
 
     private void publishMoment() {
-        realm.beginTransaction();
+        long now = System.currentTimeMillis();
 
         //把momentCreating放入Moment
         Moment moment = new Moment();
-        moment.setId(momentCreating.getId());
+        moment.setKey(momentCreating.getId());
         moment.setCreateTime(momentCreating.getCreateTime());
         moment.setStatus(MomentStatus.LOCAL);
         Pic pic = new Pic();
@@ -223,13 +229,17 @@ public class CreateMomentActivity extends TakePhotoActivity {
         pic.setLocalData(momentCreating.getPic());
         moment.setPic(pic);
 
+        realm.beginTransaction();
+
         realm.copyToRealm(moment);
 
-        //修改momentCreating放入Moment状态
-        momentCreating.setStatus(MomentStatus.LOCAL);
         realm.commitTransaction();
+
         binding.contentTextInputEditText.setText("");
 
+        Log.v("pplog", "time:" + (System.currentTimeMillis() - now));
+
+        setResult(RESULT_OK);
         finish();
     }
 }

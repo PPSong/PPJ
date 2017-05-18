@@ -22,9 +22,11 @@ import com.penn.ppj.R;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.model.realm.RelatedUser;
+import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
@@ -598,5 +600,77 @@ public class PPHelper {
                     .error(R.mipmap.ic_launcher)
                     .into(imageView);
         }
+    }
+
+    public static Bitmap resize(Bitmap image, int maxWidth, int maxHeight) {
+        if (maxHeight > 0 && maxWidth > 0) {
+            int width = image.getWidth();
+            int height = image.getHeight();
+            float ratioBitmap = (float) width / (float) height;
+            float ratioMax = (float) maxWidth / (float) maxHeight;
+
+            int finalWidth = maxWidth;
+            int finalHeight = maxHeight;
+            if (ratioMax > 1) {
+                finalWidth = (int) ((float) maxHeight * ratioBitmap);
+            } else {
+                finalHeight = (int) ((float) maxWidth / ratioBitmap);
+            }
+            image = Bitmap.createScaledBitmap(image, finalWidth, finalHeight, true);
+            return image;
+        } else {
+            return image;
+        }
+    }
+
+    public static void refreshMoment(String id) {
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("id", id);
+
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api("moment.detail", jBody.getJSONObject());
+
+        apiResult.subscribe(
+                new Consumer<String>() {
+                    @Override
+                    public void accept(@NonNull String s) throws Exception {
+                        Log.v("pplog200", s);
+
+                        PPWarn ppWarn = ppWarning(s);
+                        if (ppWarn != null) {
+                            throw new Exception(ppWarn.msg);
+                        }
+
+                        long createTime = PPHelper.ppFromString(s, "data.createTime").getAsLong();
+
+                        try (Realm realm = Realm.getDefaultInstance()) {
+                            Moment moment = new Moment();
+                            moment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data._creator.id").getAsString());
+                            moment.setId(PPHelper.ppFromString(s, "data._id").getAsString());
+                            moment.setCreateTime(createTime);
+                            moment.setStatus(MomentStatus.NET);
+                            moment.setAvatar(PPHelper.ppFromString(s, "data._creator.head").getAsString());
+
+                            Pic pic = new Pic();
+                            pic.setKey(PPHelper.ppFromString(s, "data.pics.0").getAsString());
+                            pic.setStatus(PicStatus.NET);
+                            moment.setPic(pic);
+
+                            realm.beginTransaction();
+
+                            realm.insertOrUpdate(moment);
+
+                            realm.commitTransaction();
+                        }
+                    }
+                },
+                new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+                        error(throwable.toString());
+                    }
+                }
+        );
     }
 }

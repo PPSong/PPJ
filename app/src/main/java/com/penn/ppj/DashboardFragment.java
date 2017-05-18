@@ -18,11 +18,16 @@ import android.widget.TextView;
 
 import com.penn.ppj.databinding.FragmentDashboardBinding;
 import com.penn.ppj.databinding.MomentOverviewCellBinding;
+import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPLoadController;
 import com.penn.ppj.util.PPLoadDataAdapter;
 import com.squareup.picasso.Picasso;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +41,7 @@ import io.realm.Sort;
 
 public class DashboardFragment extends Fragment {
 
-    private FragmentDashboardBinding binding;
+    public FragmentDashboardBinding binding;
 
     private Realm realm;
 

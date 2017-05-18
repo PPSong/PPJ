@@ -62,7 +62,7 @@ public class PPApplication extends Application {
             Log.v("pplog", "imagePicUrl");
             PPHelper.setImageViewResource(imageView, pic.getKey(), 180);
         } else {
-            byte[] data = pic.getLocalData();
+            byte[] data = pic.getThumbLocalData();
             Bitmap bmp = BitmapFactory.decodeByteArray(data, 0, data.length);
             imageView.setImageBitmap(bmp);
         }

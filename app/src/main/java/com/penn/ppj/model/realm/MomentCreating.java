@@ -26,7 +26,7 @@ import static java.lang.System.currentTimeMillis;
 
 public class MomentCreating extends RealmObject {
     @PrimaryKey
-    private String id; //createTime_creatorUserId for local new moment
+    private String id; //createTime_creatorUserId
     private long createTime;
     private byte[] pic;
     private String content;

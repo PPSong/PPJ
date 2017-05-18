@@ -91,6 +91,8 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         View view = binding.getRoot();
         //end common
 
+        geo = PPHelper.getLatestGeo();
+
         realm = Realm.getDefaultInstance();
 
         data = realm.where(NearbyMoment.class).findAllSorted("createTime", Sort.DESCENDING);
@@ -157,6 +159,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
                 long createTime = PPHelper.ppFromString(s, "data.list." + i + ".createTime").getAsLong();
 
                 NearbyMoment nearbyMoment = new NearbyMoment();
+                nearbyMoment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data.list." + i + "._creator.id").getAsString());
                 nearbyMoment.setId(PPHelper.ppFromString(s, "data.list." + i + "._id").getAsString());
                 nearbyMoment.setCreateTime(createTime);
                 nearbyMoment.setStatus(MomentStatus.NET);

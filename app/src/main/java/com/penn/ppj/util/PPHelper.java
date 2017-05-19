@@ -1,6 +1,7 @@
 package com.penn.ppj.util;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
@@ -23,8 +24,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.penn.ppj.LoginActivity;
 import com.penn.ppj.MomentDetailActivity;
 import com.penn.ppj.PPApplication;
+import com.penn.ppj.PPService;
 import com.penn.ppj.R;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
@@ -92,6 +95,12 @@ public class PPHelper {
         baiduAk = null;
         PPRetrofit.authBody = null;
         removePrefItem(AUTH_BODY_KEY);
+
+        CurUser.clear();
+        PPSocketSingleton.close();
+        PPApplication.getContext().stopService(new Intent(PPApplication.getContext(), PPService.class));
+        Intent intent = new Intent(PPApplication.getContext(), LoginActivity.class);
+        PPApplication.getContext().startActivity(intent);
     }
 
     public static int getStatusBarAddActionBarHeight(Context context) {
@@ -311,6 +320,9 @@ public class PPHelper {
                             realm.commitTransaction();
                         }
 
+                        Intent intent = new Intent(PPApplication.getContext(), new PPService().getClass());
+                        PPApplication.getContext().startService(intent);
+
                         networkConnectNeedToRefresh();
                         return "OK";
                     }
@@ -377,7 +389,7 @@ public class PPHelper {
         return height_4_3;
     }
 
-    public static void likeButtonAppear(Context context, FloatingActionButton floatingActionButton, int topMargin) {
+    public static void likeButtonAppear(Context context, View floatingActionButton, int topMargin) {
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) floatingActionButton.getLayoutParams();
         params.topMargin = topMargin;
         floatingActionButton.setLayoutParams(params);

@@ -33,6 +33,7 @@ import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPPagerAdapter;
 import com.penn.ppj.util.PPRetrofit;
+import com.penn.ppj.util.PPSocketSingleton;
 import com.penn.ppj.util.PPWarn;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.storage.Configuration;
@@ -197,16 +198,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void LoginEvent(UserLoginEvent event) {
-        setupMenuIcon();
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void LoginEvent(UserLogoutEvent event) {
-        setupMenuIcon();
-    }
-
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void MomentPublishEvent(MomentPublishEvent event) {
         PPHelper.refreshMoment(event.id);
@@ -362,24 +353,6 @@ public class MainActivity extends AppCompatActivity
     private void createMoment() {
         Intent intent = new Intent(this, CreateMomentActivity.class);
         startActivityForResult(intent, CREATE_MOMENT);
-    }
-
-    private void loginOut() {
-        if (CurUser.logined()) {
-            CurUser.clear();
-            EventBus.getDefault().post(new UserLoginEvent());
-        } else {
-            CurUser.getInstance();
-            EventBus.getDefault().post(new UserLogoutEvent());
-        }
-    }
-
-    private void setupMenuIcon() {
-        if (CurUser.logined()) {
-            menu.findItem(R.id.login_out).setIcon(getResources().getDrawable(R.drawable.ic_exit_to_app_black_24dp));
-        } else {
-            menu.findItem(R.id.login_out).setIcon(getResources().getDrawable(R.drawable.ic_person_black_24dp));
-        }
     }
 
     @Override

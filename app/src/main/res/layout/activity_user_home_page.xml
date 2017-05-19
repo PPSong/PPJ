@@ -22,25 +22,26 @@
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/avatar_image_view"
             android:layout_width="@dimen/avatar_big"
-            android:layout_height="@dimen/avatar_big" />
+            android:layout_height="@dimen/avatar_big"
+            app:avatarImageUrl="@{data.avatar}" />
 
         <TextView
             android:id="@+id/nickname_text_view"
-            android:text="@{data.nickname}"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="@{data.nickname}" />
 
         <ToggleButton
             android:id="@+id/follow_toggle_button"
             style="@style/Base.Widget.AppCompat.Button.Colored"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOn="@string/unfollowing"
-            android:textOff="@string/follow"
+            android:checked="@{data.followed}"
             android:drawablePadding="@dimen/small"
             android:drawableStart="@drawable/asl_follow"
-            android:checked="@{data.followed}"
-            android:text="@string/follow" />
+            android:text="@string/follow"
+            android:textOff="@string/follow"
+            android:textOn="@string/unfollowing" />
 
         <LinearLayout
             android:layout_width="match_parent"

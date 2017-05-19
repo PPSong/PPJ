@@ -285,11 +285,11 @@ public class MomentDetailActivity extends AppCompatActivity {
                 if (binding.mainRecyclerView.computeVerticalScrollOffset() < maxOffset) {
                     binding.mainImageView.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
                     binding.mainImageView.setElevation(0);
-                    binding.likeFloatingActionButton.setTranslationY(binding.mainImageView.getHeight() - binding.likeFloatingActionButton.getHeight() / 2 - binding.mainRecyclerView.computeVerticalScrollOffset());
+                    binding.likeFloatingActionButton.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
                 } else {
                     binding.mainImageView.setTranslationY(-maxOffset);
                     binding.mainImageView.setElevation(16);
-                    binding.likeFloatingActionButton.setTranslationY(binding.mainImageView.getHeight() - binding.likeFloatingActionButton.getHeight() / 2 - maxOffset);
+                    binding.likeFloatingActionButton.setTranslationY(-maxOffset);
                 }
             }
         });
@@ -352,6 +352,8 @@ public class MomentDetailActivity extends AppCompatActivity {
         final int titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
         final int headPicHeight = calculateHeadHeight(this);
         final int floatingButtonHalfHeight = binding.likeFloatingActionButton.getHeight() / 2;
+
+        Log.v("pplog250", "" + titleHeight + "," + headPicHeight + "," + floatingButtonHalfHeight);
 
         PPHelper.likeButtonAppear(this, binding.likeFloatingActionButton, titleHeight + headPicHeight - floatingButtonHalfHeight);
     }

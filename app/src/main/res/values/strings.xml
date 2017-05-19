@@ -25,4 +25,5 @@
     <string name="create_moment">新建片刻</string>
     <string name="publish">发布</string>
     <string name="unfollowing">取消关注</string>
+    <string name="empty">无内容</string>
 </resources>

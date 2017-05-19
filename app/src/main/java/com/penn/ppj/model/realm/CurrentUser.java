@@ -24,46 +24,6 @@ public class CurrentUser extends RealmObject {
     private int socketPort;
     private RealmList<Pic> pics;
 
-    private long latestMomentCreateTime;
-    private long earliestMomentCreateTime;
-
-    public long getLatestMessageCreateTime() {
-        return latestMessageCreateTime;
-    }
-
-    public void setLatestMessageCreateTime(long latestMessageCreateTime) {
-        this.latestMessageCreateTime = latestMessageCreateTime;
-    }
-
-    public long getEarliestMessageCreateTime() {
-        return earliestMessageCreateTime;
-    }
-
-    public void setEarliestMessageCreateTime(long earliestMessageCreateTime) {
-        this.earliestMessageCreateTime = earliestMessageCreateTime;
-    }
-
-    private long latestMessageCreateTime;
-    private long earliestMessageCreateTime;
-
-    public long getLatestMomentCreateTime() {
-        return latestMomentCreateTime;
-    }
-
-    public void setLatestMomentCreateTime(long latestMomentCreateTime) {
-        this.latestMomentCreateTime = latestMomentCreateTime;
-    }
-
-    public long getEarliestMomentCreateTime() {
-        return earliestMomentCreateTime;
-    }
-
-    public void setEarliestMomentCreateTime(long earliestMomentCreateTime) {
-        this.earliestMomentCreateTime = earliestMomentCreateTime;
-    }
-
-    private boolean initLoadingFinished;
-
     public String getUserId() {
         return userId;
     }
@@ -167,14 +127,4 @@ public class CurrentUser extends RealmObject {
     public void setPics(RealmList<Pic> pics) {
         this.pics = pics;
     }
-
-
-    public boolean isInitLoadingFinished() {
-        return initLoadingFinished;
-    }
-
-    public void setInitLoadingFinished(boolean initLoadingFinished) {
-        this.initLoadingFinished = initLoadingFinished;
-    }
-
 }

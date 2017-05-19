@@ -29,6 +29,7 @@ import com.penn.ppj.R;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
+import com.penn.ppj.model.realm.Message;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
 import com.penn.ppj.model.realm.Pic;
@@ -41,6 +42,7 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.util.regex.Pattern;
 
@@ -55,6 +57,8 @@ import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
+import io.realm.RealmResults;
+import io.realm.Sort;
 
 import static com.penn.ppj.PPApplication.getContext;
 
@@ -398,8 +402,105 @@ public class PPHelper {
         getContext().getSharedPreferences(APP_NAME, Context.MODE_PRIVATE).edit().remove(AUTH_BODY_KEY).apply();
     }
 
+    public static void getNewMoment(long mostNewCreateTime) {
+        final int pageSize = 20;
+
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("after", mostNewCreateTime)
+                .put("sort", "1");
+
+        final Observable<String> apiResult = PPRetrofit.getInstance().api("timeline.mine", jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                long newStartTime = processMoment(s, pageSize);
+                                if (newStartTime != -1) {
+                                    getNewMoment(newStartTime);
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
+    }
+
+    public static void getNewMessage(long mostNewCreateTime) {
+        final int pageSize = 20;
+
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("after", mostNewCreateTime)
+                .put("sort", "1");
+
+        final Observable<String> apiResult = PPRetrofit.getInstance().api("message.list", jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                long newStartTime = processMessage(s, pageSize);
+                                if (newStartTime != -1) {
+                                    getNewMessage(newStartTime);
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
+    }
+
     //包含所有网络获得链接后需要更新的事情
     public static void networkConnectNeedToRefresh() {
+        //我的moment
+
+        long mostNewMomentCreateTime = 0;
+        try (Realm realm = Realm.getDefaultInstance()) {
+            RealmResults<Moment> moments = realm.where(Moment.class).findAllSorted("createTime", Sort.DESCENDING);
+            if (moments.size() > 0) {
+                mostNewMomentCreateTime = moments.get(0).getCreateTime();
+            }
+        }
+        getNewMoment(mostNewMomentCreateTime);
+
+        //我的notification
+        long mostNewMessageCreateTime = 0;
+        try (Realm realm = Realm.getDefaultInstance()) {
+            RealmResults<Message> messages = realm.where(Message.class).findAllSorted("createTime", Sort.DESCENDING);
+            if (messages.size() > 0) {
+                mostNewMessageCreateTime = messages.get(0).getCreateTime();
+            }
+        }
+        getNewMessage(mostNewMessageCreateTime);
+
         //我的follow
         PPJSONObject jBodyFollow = new PPJSONObject();
         jBodyFollow
@@ -567,11 +668,6 @@ public class PPHelper {
                             }
                         }
                 );
-
-        //我的notification
-
-        //我的dashboard moment
-
     }
 
     public static void setImageViewResource(final ImageView imageView, String pic, int size) {
@@ -694,5 +790,121 @@ public class PPHelper {
                     }
                 }
         );
+    }
+
+    private static long processMoment(String s, int pageSize) {
+        try (Realm realm = Realm.getDefaultInstance()) {
+
+            realm.beginTransaction();
+
+            Log.v("pplog", s);
+            JsonArray ja = PPHelper.ppFromString(s, "data.timeline").getAsJsonArray();
+
+            for (int i = 0; i < ja.size(); i++) {
+                long createTime = PPHelper.ppFromString(s, "data.timeline." + i + "._info.createTime").getAsLong();
+
+                Moment moment = new Moment();
+                moment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.id").getAsString());
+                moment.setId(PPHelper.ppFromString(s, "data.timeline." + i + ".id").getAsString());
+                moment.setCreateTime(createTime);
+                moment.setStatus(MomentStatus.NET);
+                moment.setAvatar(PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.head").getAsString());
+
+                Pic pic = new Pic();
+                pic.setKey(PPHelper.ppFromString(s, "data.timeline." + i + "._info.pics.0").getAsString());
+                pic.setStatus(PicStatus.NET);
+                moment.setPic(pic);
+
+                realm.insertOrUpdate(moment);
+            }
+
+            realm.commitTransaction();
+
+            if (ja.size() < pageSize) {
+                return -1;
+            } else {
+                return PPHelper.ppFromString(s, "data.timeline." + (ja.size() - 1) + "._info.createTime").getAsLong();
+            }
+        }
+    }
+
+    private static long processMessage(String s, int pageSize) {
+        long newestCreateTime = 0;
+
+        try (Realm realm = Realm.getDefaultInstance()) {
+
+            realm.beginTransaction();
+
+            Log.v("pplog", "pptest1:" + s);
+
+            JsonArray ja = PPHelper.ppFromString(s, "data.list").getAsJsonArray();
+
+            Log.v("pplog", "pptest2:" + s);
+
+            for (int i = 0; i < ja.size(); i++) {
+                Message message = parseMessage(PPHelper.ppFromString(s, "data.list." + i).getAsJsonObject().toString());
+
+                realm.insertOrUpdate(message);
+
+                if (i == (ja.size() - 1)) {
+                    newestCreateTime = message.getCreateTime();
+                }
+            }
+
+            realm.commitTransaction();
+
+            if (ja.size() < pageSize) {
+                return -1;
+            } else {
+                return newestCreateTime;
+            }
+        }
+    }
+
+    private static Message parseMessage(String s) {
+        Log.v("pplog", "parseMessage:" + s);
+        Message message = new Message();
+        message.setId(PPHelper.ppFromString(s, "id").getAsString());
+        int type = PPHelper.ppFromString(s, "type").getAsInt();
+        message.setType(type);
+        message.setRead(PPHelper.ppFromString(s, "read").getAsInt() == 1 ? true : false);
+        message.setCreateTime(PPHelper.ppFromString(s, "createTime").getAsLong());
+        String content = "";
+
+        Log.v("pplog", "parseMessage type:" + type);
+
+        //nickname, avatar, content
+        switch (type) {
+            case 8:
+            case 9:
+            case 10:
+                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
+                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
+                content = PPHelper.ppFromString(s, "content").getAsString();
+                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
+                return message;
+
+            case 15:
+                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
+                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
+                content = PPHelper.ppFromString(s, "content").getAsString();
+                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
+                return message;
+
+            case 16:
+                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
+                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
+                content = PPHelper.ppFromString(s, "content").getAsString();
+                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
+                return message;
+
+            default:
+                Log.v("pplog", "未处理:" + type);
+                message.setNickname(PPHelper.currentUserNickname);
+                message.setAvatar(PPHelper.currentUserAvatar);
+                content = "未处理:" + s;
+                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
+                return message;
+        }
     }
 }

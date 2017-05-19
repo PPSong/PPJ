@@ -16,9 +16,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
-
-import com.google.gson.JsonArray;
-import com.penn.ppj.messageEvent.InitLoadingEvent;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.messageEvent.UserLoginEvent;
@@ -81,7 +78,6 @@ public class MainActivity extends AppCompatActivity
     private static final int CREATE_MOMENT = 1001;
 
     private ActivityMainBinding binding;
-    private boolean inInitLoading = false;
 
     private Menu menu;
 
@@ -163,8 +159,6 @@ public class MainActivity extends AppCompatActivity
         binding.mainViewPager.setAdapter(adapter);
         //有几个tab就设几防止page自己重新刷新
         binding.mainViewPager.setOffscreenPageLimit(3);
-
-        initLoading();
     }
 
 //    @Override
@@ -214,14 +208,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    public void InitLoadingEvent(InitLoadingEvent event) {
-        Log.v("pplog", "InitLoadingEvent");
-        initLoading();
-    }
-
-    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void MomentPublishEvent(MomentPublishEvent event) {
-        Log.v("pplog", "InitLoadingEvent");
         PPHelper.refreshMoment(event.id);
     }
 
@@ -375,97 +362,6 @@ public class MainActivity extends AppCompatActivity
     private void createMoment() {
         Intent intent = new Intent(this, CreateMomentActivity.class);
         startActivityForResult(intent, CREATE_MOMENT);
-    }
-
-    private void initLoading() {
-        synchronized (MainActivity.class) {
-            if (inInitLoading) {
-                return;
-            }
-
-            inInitLoading = true;
-
-            try (Realm realm = Realm.getDefaultInstance()) {
-                CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
-
-                if (currentUser.isInitLoadingFinished()) {
-                    inInitLoading = false;
-                    return;
-                }
-
-                long earliestCreateTime = currentUser.getEarliestMomentCreateTime();
-
-                PPJSONObject jBody = new PPJSONObject();
-                jBody
-                        .put("before", earliestCreateTime);
-
-                final Observable<String> apiResult = PPRetrofit.getInstance().api("timeline.mine", jBody.getJSONObject());
-
-                apiResult
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(
-                                new Consumer<String>() {
-                                    @Override
-                                    public void accept(@NonNull String s) throws Exception {
-                                        PPWarn ppWarn = ppWarning(s);
-
-                                        if (ppWarn != null) {
-                                            throw new Exception(ppWarn.msg);
-                                        }
-
-                                        processMoment(s);
-                                    }
-                                },
-                                new Consumer<Throwable>() {
-                                    @Override
-                                    public void accept(@NonNull Throwable throwable) throws Exception {
-                                        PPHelper.error(throwable.toString());
-                                    }
-                                }
-                        );
-            }
-        }
-    }
-
-    private void processMoment(String s) {
-        try (Realm realm = Realm.getDefaultInstance()) {
-            CurrentUser currentUser = realm.where(CurrentUser.class).findFirst();
-
-            realm.beginTransaction();
-
-            Log.v("pplog", s);
-            JsonArray ja = PPHelper.ppFromString(s, "data.timeline").getAsJsonArray();
-
-            for (int i = 0; i < ja.size(); i++) {
-                long createTime = PPHelper.ppFromString(s, "data.timeline." + i + "._info.createTime").getAsLong();
-
-                Moment moment = new Moment();
-                moment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.id").getAsString());
-                moment.setId(PPHelper.ppFromString(s, "data.timeline." + i + ".id").getAsString());
-                moment.setCreateTime(createTime);
-                moment.setStatus(MomentStatus.NET);
-                moment.setAvatar(PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.head").getAsString());
-
-                Pic pic = new Pic();
-                pic.setKey(PPHelper.ppFromString(s, "data.timeline." + i + "._info.pics.0").getAsString());
-                pic.setStatus(PicStatus.NET);
-                moment.setPic(pic);
-
-                realm.insertOrUpdate(moment);
-                currentUser.setEarliestMomentCreateTime(createTime);
-            }
-
-            if (ja.size() < PPHelper.TIMELINE_MINE_PAGE_SIZE) {
-                currentUser.setInitLoadingFinished(true);
-            }
-
-            realm.commitTransaction();
-
-            inInitLoading = false;
-            //继续触发initLoading
-            EventBus.getDefault().post(new InitLoadingEvent());
-        }
     }
 
     private void loginOut() {

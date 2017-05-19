@@ -3,7 +3,9 @@ package com.penn.ppj;
 import android.databinding.DataBindingUtil;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.transition.TransitionManager;
 import android.util.Log;
+import android.widget.CompoundButton;
 
 import com.google.gson.JsonArray;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
@@ -42,6 +44,13 @@ public class UserHomePageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_user_home_page);
+
+        binding.followToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                TransitionManager.beginDelayedTransition(binding.mainLinearLayout);
+            }
+        });
 
         realm = Realm.getDefaultInstance();
 

@@ -5,11 +5,17 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.ScaleAnimation;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -17,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.penn.ppj.MomentDetailActivity;
 import com.penn.ppj.PPApplication;
 import com.penn.ppj.R;
 import com.penn.ppj.model.Geo;
@@ -358,6 +365,22 @@ public class PPHelper {
         return result;
     }
 
+    public static int calculateHeadHeight(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels;
+        int height_4_3 = (int) dpWidth * 3 / 4;
+
+        return height_4_3;
+    }
+
+    public static void likeButtonAppear(Context context, FloatingActionButton floatingActionButton, int topMargin) {
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) floatingActionButton.getLayoutParams();
+        params.topMargin = topMargin;
+        floatingActionButton.setLayoutParams(params);
+
+        floatingActionButton.startAnimation(AnimationUtils.loadAnimation(context, R.anim.appear));
+    }
+
     public static Geo getLatestGeo() {
         //pptodo implement it
         return Geo.getDefaultGeo();
@@ -544,7 +567,6 @@ public class PPHelper {
                             }
                         }
                 );
-
 
         //我的notification
 

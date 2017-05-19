@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final int DASHBOARD = 0;
     private static final int NEARBY = 1;
+    private static final int NOTIFICATION = 2;
 
     private static final int CREATE_MOMENT = 1001;
 
@@ -91,6 +92,8 @@ public class MainActivity extends AppCompatActivity
     private DashboardFragment dashboardFragment;
 
     private NearbyFragment nearbyFragment;
+
+    private NotificationFragment notificationFragment;
 
     @Override
     public void onStart() {
@@ -153,34 +156,36 @@ public class MainActivity extends AppCompatActivity
         PPPagerAdapter adapter = new PPPagerAdapter(getSupportFragmentManager());
         dashboardFragment = new DashboardFragment();
         nearbyFragment = new NearbyFragment();
+        notificationFragment = new NotificationFragment();
         adapter.addFragment(dashboardFragment, "C1");
         adapter.addFragment(nearbyFragment, "C2");
+        adapter.addFragment(notificationFragment, "C3");
         binding.mainViewPager.setAdapter(adapter);
         //有几个tab就设几防止page自己重新刷新
-        binding.mainViewPager.setOffscreenPageLimit(2);
+        binding.mainViewPager.setOffscreenPageLimit(3);
 
         initLoading();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        this.menu = menu;
-        getMenuInflater().inflate(R.menu.main, menu);
-        setupMenuIcon();
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.login_out:
-                loginOut();
-                return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        this.menu = menu;
+//        getMenuInflater().inflate(R.menu.main, menu);
+//        setupMenuIcon();
+//
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.login_out:
+//                loginOut();
+//                return true;
+//        }
+//
+//        return super.onOptionsItemSelected(item);
+//    }
 
     //-----helper-----
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -505,7 +510,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nearby) {
             binding.mainViewPager.setCurrentItem(NEARBY);
         } else if (id == R.id.notification) {
-
+            binding.mainViewPager.setCurrentItem(NOTIFICATION);
         } else if (id == R.id.exit) {
             PPHelper.clear();
             finish();

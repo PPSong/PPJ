@@ -27,6 +27,25 @@ public class CurrentUser extends RealmObject {
     private long latestMomentCreateTime;
     private long earliestMomentCreateTime;
 
+    public long getLatestMessageCreateTime() {
+        return latestMessageCreateTime;
+    }
+
+    public void setLatestMessageCreateTime(long latestMessageCreateTime) {
+        this.latestMessageCreateTime = latestMessageCreateTime;
+    }
+
+    public long getEarliestMessageCreateTime() {
+        return earliestMessageCreateTime;
+    }
+
+    public void setEarliestMessageCreateTime(long earliestMessageCreateTime) {
+        this.earliestMessageCreateTime = earliestMessageCreateTime;
+    }
+
+    private long latestMessageCreateTime;
+    private long earliestMessageCreateTime;
+
     public long getLatestMomentCreateTime() {
         return latestMomentCreateTime;
     }

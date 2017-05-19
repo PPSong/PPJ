@@ -32,6 +32,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
+            android:visibility="invisible"
             android:layout_marginRight="@dimen/common"
             app:srcCompat="@drawable/ic_favorite_border_black_24dp" />
 

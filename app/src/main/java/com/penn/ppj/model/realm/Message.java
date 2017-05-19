@@ -16,11 +16,21 @@ public class Message extends RealmObject {
     @PrimaryKey
     private String id;
     private long createTime;
+    private String nickname;
     private boolean read;
     private String messageType;
     private String avatar;
     private int type;
-    private String body;
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    private String content;
 
     public String getId() {
         return id;
@@ -36,6 +46,14 @@ public class Message extends RealmObject {
 
     public void setCreateTime(long createTime) {
         this.createTime = createTime;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public boolean isRead() {
@@ -60,14 +78,6 @@ public class Message extends RealmObject {
 
     public void setType(int type) {
         this.type = type;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
     }
 
     public MessageType getMessageType() {

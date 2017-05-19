@@ -1,16 +1,22 @@
 package com.penn.ppj;
 
+import android.animation.ObjectAnimator;
+import android.animation.TimeInterpolator;
 import android.content.Intent;
 import android.databinding.BindingAdapter;
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
+import android.graphics.Interpolator;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,6 +27,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.BounceInterpolator;
+import android.view.animation.TranslateAnimation;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -65,6 +77,7 @@ import io.realm.Sort;
 import static android.R.attr.data;
 import static android.R.attr.resource;
 import static com.penn.ppj.PPApplication.getContext;
+import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
 import static io.reactivex.Observable.zip;
 
 public class MomentDetailActivity extends AppCompatActivity {
@@ -117,6 +130,23 @@ public class MomentDetailActivity extends AppCompatActivity {
                 super(binding.getRoot());
                 this.binding = binding;
                 binding.setData(momentDetail);
+//                final TextView tv = binding.contentTextView;
+//                ViewTreeObserver vto = tv.getViewTreeObserver();
+//                vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+//
+//                    @Override
+//                    public void onGlobalLayout() {
+//                        Log.v("pplog", "height:" + tv.getHeight());
+////                        ViewTreeObserver obs = tv.getViewTreeObserver();
+////
+////                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+////                            obs.removeOnGlobalLayoutListener(this);
+////                        } else {
+////                            obs.removeGlobalOnLayoutListener(this);
+////                        }
+//                    }
+//
+//                });
             }
         }
 
@@ -173,6 +203,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
                 ((PPHead) holder).binding.setData(momentDetail);
+                Log.v("pplog", "height setdata2:" + (momentDetail == null ? "null" : momentDetail.getContent()));
             } else {
                 Comment comment = data.get(position - 1);
                 ((PPHoldView) holder).binding.setData(comment);
@@ -303,10 +334,26 @@ public class MomentDetailActivity extends AppCompatActivity {
                 Log.v("pplog", "setupBindingData ok");
                 binding.setData(this.momentDetail);
                 momentDetailHeadBinding.setData(this.momentDetail);
+
+                //由于layout展开需要时间, 所以设置延时, 要不然获得的高度为0
+                binding.mainRecyclerView.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        setupLikeButton();
+                    }
+                }, 200);
             } else {
                 Log.v("pplog", "setupBindingData this.momentDetail != null");
             }
         }
+    }
+
+    private void setupLikeButton() {
+        final int titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
+        final int headPicHeight = calculateHeadHeight(this);
+        final int floatingButtonHalfHeight = binding.likeFloatingActionButton.getHeight() / 2;
+
+        PPHelper.likeButtonAppear(this, binding.likeFloatingActionButton, titleHeight + headPicHeight - floatingButtonHalfHeight);
     }
 
     private void getMomentDetail() {

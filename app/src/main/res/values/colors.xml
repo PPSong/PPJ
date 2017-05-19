@@ -6,4 +6,5 @@
     <color name="mid_grey">#40808080</color>
 
     <color name="inline_action_icon">#ff757575</color> <!-- grey 600 -->
+    <color name="light_icon">#ffffffff</color>
 </resources>

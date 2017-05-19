@@ -13,6 +13,7 @@
     </data>
 
     <LinearLayout
+        android:id="@+id/main_linear_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
@@ -30,8 +31,14 @@
             android:layout_height="wrap_content" />
 
         <ToggleButton
+            android:id="@+id/follow_toggle_button"
+            style="@style/Base.Widget.AppCompat.Button.Colored"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textOn="@string/unfollowing"
+            android:textOff="@string/follow"
+            android:drawablePadding="@dimen/small"
+            android:drawableStart="@drawable/asl_follow"
             android:checked="@{data.followed}"
             android:text="@string/follow" />
 

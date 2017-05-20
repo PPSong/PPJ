@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -72,6 +73,9 @@ import static com.penn.ppj.PPApplication.getContext;
  */
 
 public class PPHelper {
+    public static final int UP = 1;
+    public static final int DOWN = 2;
+
     public static final int TIMELINE_MINE_PAGE_SIZE = 20;
     public static final String APP_NAME = "PPJ";
     public static final String AUTH_BODY_KEY = "AUTH_BODY_KEY";
@@ -116,6 +120,16 @@ public class PPHelper {
         if (context.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
             result += TypedValue.complexToDimensionPixelSize(tv.data, context.getResources().getDisplayMetrics());
         }
+        return result;
+    }
+
+    public static int getStatusBarHeight(Context context) {
+        int result = 0;
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = context.getResources().getDimensionPixelSize(resourceId);
+        }
+
         return result;
     }
 
@@ -214,7 +228,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -333,7 +347,13 @@ public class PPHelper {
 
     public static void error(String error) {
         Log.v("pplog", error);
-        Toasty.error(getContext(), error, Toast.LENGTH_LONG, true).show();
+        if (error.equalsIgnoreCase("java.lang.Exception: NO_PERMISSION")) {
+            Toasty.error(getContext(), "请重新登录!", Toast.LENGTH_LONG, true).show();
+            clear();
+        } else {
+            Toasty.error(getContext(), error, Toast.LENGTH_LONG, true).show();
+        }
+
     }
 
 
@@ -693,6 +713,23 @@ public class PPHelper {
                 );
     }
 
+    public static void setMapImage(final ImageView imageView, String geo) {
+        if (TextUtils.isEmpty(geo)) {
+            Log.v("pplog", "isEmpty");
+            return;
+        }
+
+        String[] geoArr = geo.split(",");
+        String geoStr = geoArr[0] + "," + geoArr[1];
+        String url = "http://api.map.baidu.com/staticimage/v2?ak=" + baiduAk + "&mcode=666666&center=" + geoStr + "&width=320&height=160&zoom=17&markers=" + geoStr + "&markerStyles=-1";
+
+        Picasso.with(getContext())
+                .load(url)
+                .error(R.mipmap.ic_launcher)
+                .into(imageView);
+
+    }
+
     public static void setImageViewResource(final ImageView imageView, String pic, int size) {
         if (TextUtils.isEmpty(pic)) {
             Log.v("pplog", "isEmpty");
@@ -705,26 +742,26 @@ public class PPHelper {
             Picasso.with(getContext())
                     .load(picUrl)
                     .error(R.mipmap.ic_launcher)
-                    //          .into(imageView);
-                    .into(new Target() {
-                        //pptodo 改进取色方案
-                        @Override
-                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                    /* Save the bitmap or do something with it here */
-                            Palette p = Palette.from(bitmap).generate();
-                            //Set it in the ImageView
-                            imageView.setImageBitmap(bitmap);
-                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Drawable errorDrawable) {
-                        }
-                    });
+                    .into(imageView);
+//                    .into(new Target() {
+//                        //pptodo 改进取色方案
+//                        @Override
+//                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+//                    /* Save the bitmap or do something with it here */
+//                            Palette p = Palette.from(bitmap).generate();
+//                            //Set it in the ImageView
+//                            imageView.setImageBitmap(bitmap);
+//                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
+//                        }
+//
+//                        @Override
+//                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+//                        }
+//
+//                        @Override
+//                        public void onBitmapFailed(Drawable errorDrawable) {
+//                        }
+//                    });
         } else if (size == 180) {
             Log.v("pplog", "180");
             String picUrl = get180ImageUrl(pic);
@@ -939,5 +976,14 @@ public class PPHelper {
             InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
+    }
+
+    public static int getMomentOverviewBackgroundColor(int position) {
+        TypedArray ta = getContext().getResources().obtainTypedArray(R.array.loading_placeholders_dark);
+        int[] colors = new int[ta.length()];
+        for (int i = 0; i < ta.length(); i++) {
+            colors[i] = ta.getColor(i, 0);
+        }
+        return colors[position % ta.length()];
     }
 }

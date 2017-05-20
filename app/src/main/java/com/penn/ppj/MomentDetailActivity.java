@@ -349,6 +349,12 @@ public class MomentDetailActivity extends AppCompatActivity {
             }
         });
 
+        //容错 currentUserAvatar为空
+        if (TextUtils.isEmpty(PPHelper.currentUserAvatar)) {
+            Log.v("pplog", "currentUserAvatar不应该为空");
+            return;
+        }
+
         Picasso.with(this).load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).into(binding.commentAvatarCircleImageView);
     }
 
@@ -645,6 +651,9 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         MomentDetail momentDetail = new MomentDetail();
         momentDetail.setId(ppFromString(momentDetailString, "data._id").getAsString());
+        momentDetail.setGeo(ppFromString(momentDetailString, "data.location.geo.0").getAsString() + "," + ppFromString(momentDetailString, "data.location.geo.1").getAsString());
+        momentDetail.setAddress(ppFromString(momentDetailString, "data.location.detail").getAsString());
+        momentDetail.setCity(ppFromString(momentDetailString, "data.location.city").getAsString());
         momentDetail.setUserId(ppFromString(momentDetailString, "data._creator.id").getAsString());
         momentDetail.setContent(ppFromString(momentDetailString, "data.content").getAsString());
         momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);

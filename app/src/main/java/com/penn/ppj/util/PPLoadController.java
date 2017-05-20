@@ -19,9 +19,6 @@ import io.reactivex.subjects.BehaviorSubject;
  */
 
 public class PPLoadController extends RecyclerView.OnScrollListener implements SwipeRefreshLayout.OnRefreshListener {
-    private static final int UP = 1;
-    private static final int DOWN = 2;
-
     private boolean dataLoading = false;
     //default value 5
     private int loadMoreDistance = 5;
@@ -52,7 +49,7 @@ public class PPLoadController extends RecyclerView.OnScrollListener implements S
                 .subscribe(new Consumer<Integer>() {
                     @Override
                     public void accept(@NonNull Integer integer) throws Exception {
-                        if (integer == UP) {
+                        if (integer == PPHelper.UP) {
                             EventBus.getDefault().post(new ToggleToolBarEvent(false));
                         } else {
                             EventBus.getDefault().post(new ToggleToolBarEvent(true));
@@ -100,9 +97,9 @@ public class PPLoadController extends RecyclerView.OnScrollListener implements S
         super.onScrolled(recyclerView, dx, dy);
 
         if (dy > 0) {
-            scrollDirection.onNext(UP);
+            scrollDirection.onNext(PPHelper.UP);
         } else if (dy < 0) {
-            scrollDirection.onNext(DOWN);
+            scrollDirection.onNext(PPHelper.DOWN);
         }
 
         if (dy < 0 || dataLoading || ppLoadDataAdapter.noMore) {

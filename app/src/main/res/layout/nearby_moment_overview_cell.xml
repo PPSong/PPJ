@@ -12,13 +12,13 @@
             android:layout_width="180dp"
             android:layout_height="180dp" />
 
-        <de.hdodenhof.circleimageview.CircleImageView
-            android:layout_margin="@dimen/common"
-            android:layout_gravity="end"
-            android:scaleType="centerCrop"
-            android:id="@+id/avatar_circle_image_view"
-            android:layout_width="48dp"
-            android:layout_height="48dp" />
+        <!--<de.hdodenhof.circleimageview.CircleImageView-->
+            <!--android:layout_margin="@dimen/common"-->
+            <!--android:layout_gravity="end"-->
+            <!--android:scaleType="centerCrop"-->
+            <!--android:id="@+id/avatar_circle_image_view"-->
+            <!--android:layout_width="48dp"-->
+            <!--android:layout_height="48dp" />-->
 
     </FrameLayout>
 

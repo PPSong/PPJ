@@ -15,12 +15,19 @@ import com.penn.ppj.databinding.FragmentDashboardBinding;
 import com.penn.ppj.databinding.FragmentNotificationBinding;
 import com.penn.ppj.databinding.MessageCellBinding;
 import com.penn.ppj.databinding.MomentOverviewCellBinding;
+import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.model.realm.Message;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.util.PPHelper;
 
-import java.util.List;
+import org.greenrobot.eventbus.EventBus;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
+import io.reactivex.subjects.BehaviorSubject;
 import io.realm.OrderedCollectionChangeSet;
 import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
@@ -37,6 +44,8 @@ public class NotificationFragment extends Fragment {
 
     private PPAdapter ppAdapter;
     private LinearLayoutManager linearLayoutManager;
+
+    private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
 
     public NotificationFragment() {
         // Required empty public constructor
@@ -75,6 +84,35 @@ public class NotificationFragment extends Fragment {
 
         data = realm.where(Message.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
+
+        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+
+        scrollDirection
+                .distinctUntilChanged()
+                .debounce(200, TimeUnit.MILLISECONDS)
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(@NonNull Integer integer) throws Exception {
+                        if (integer == PPHelper.UP) {
+                            EventBus.getDefault().post(new ToggleToolBarEvent(false));
+                        } else {
+                            EventBus.getDefault().post(new ToggleToolBarEvent(true));
+                        }
+                    }
+                });
+
+        binding.mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (dy > 0) {
+                    scrollDirection.onNext(PPHelper.UP);
+                } else if (dy < 0) {
+                    scrollDirection.onNext(PPHelper.DOWN);
+                }
+            }
+        });
 
         setup();
 

@@ -23,7 +23,6 @@
                 style="@style/Widget.Plaid.HomeToolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:elevation="1dp"
                 android:outlineProvider="none"
                 app:titleTextAppearance="@style/TextAppearance.ToolbarTitleSmallCaps"
                 app:title="@string/jiban" />
@@ -34,7 +33,9 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:layout_margin="@dimen/fab_margin"
-                app:srcCompat="@drawable/ic_add_black_24dp" />
+                android:backgroundTint="@color/colorPrimary"
+                app:borderWidth="0dp"
+                app:srcCompat="@drawable/ic_add_black_trans_24dp" />
 
         </FrameLayout>
 

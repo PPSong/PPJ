@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
+
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.messageEvent.UserLoginEvent;
@@ -50,6 +51,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 import de.jonasrottmann.realmbrowser.RealmBrowser;
+import es.dmoral.toasty.Toasty;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -59,6 +61,7 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.BehaviorSubject;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
@@ -92,6 +95,8 @@ public class MainActivity extends AppCompatActivity
 
     private NotificationFragment notificationFragment;
 
+    private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
+
     @Override
     public void onStart() {
         super.onStart();
@@ -118,19 +123,22 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(Color.TRANSPARENT);
-        }
-
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            getWindow().setStatusBarColor(Color.TRANSPARENT);
+//        }
+//
+//        getWindow().getDecorView().setSystemUiVisibility(
+//                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) binding.mainToolbar.getLayoutParams();
         layoutParams.height = PPHelper.getStatusBarAddActionBarHeight(this);
+        Log.v("pplog", "getStatusBarAddActionBarHeight:" + PPHelper.getStatusBarAddActionBarHeight(this));
         binding.mainToolbar.setLayoutParams(layoutParams);
+
+        binding.mainToolbar.setPadding(0, PPHelper.getStatusBarHeight(this), 0, 0);
 
         setSupportActionBar(binding.mainToolbar);
 
@@ -325,7 +333,7 @@ public class MainActivity extends AppCompatActivity
 
                                     realm.beginTransaction();
                                     //删除momentCreating
-                                   // momentCreating.setStatus(MomentStatus.NET);
+                                    // momentCreating.setStatus(MomentStatus.NET);
                                     momentCreating.deleteFromRealm();
 
                                     realm.commitTransaction();
@@ -364,7 +372,8 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            //super.onBackPressed();
+            Toasty.info(this, getString(R.string.exit_tips)).show();
         }
     }
 

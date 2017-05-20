@@ -5,6 +5,7 @@ import android.content.Context;
 import android.databinding.BindingAdapter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -12,6 +13,7 @@ import com.github.curioustechizen.ago.RelativeTimeTextView;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.util.PPHelper;
+import com.squareup.picasso.Picasso;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -76,4 +78,11 @@ public class PPApplication extends Application {
         }
         Log.v("pplog", "setTimeAgo 0");
     }
+
+    @BindingAdapter({"bind:mapImageUrl"})
+    public static void setMapImage(final ImageView imageView, String geo) {
+        Log.v("pplog", "mapImageUrl");
+        PPHelper.setMapImage(imageView, geo);
+    }
+
 }

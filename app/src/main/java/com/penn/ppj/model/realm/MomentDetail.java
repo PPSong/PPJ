@@ -21,6 +21,9 @@ public class MomentDetail extends RealmObject {
     private String avatar;
     private String nickname;
     private String content;
+    private String geo;
+    private String address;
+    private String city;
     private boolean liked;
 
     private long lastVisitTime;
@@ -96,4 +99,29 @@ public class MomentDetail extends RealmObject {
     public void setLiked(boolean liked) {
         this.liked = liked;
     }
+
+    public String getGeo() {
+        return geo;
+    }
+
+    public void setGeo(String geo) {
+        this.geo = geo;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
 }

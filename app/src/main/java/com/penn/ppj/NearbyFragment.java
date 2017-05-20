@@ -98,6 +98,8 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         data = realm.where(NearbyMoment.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
+        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+
         setup();
 
         return view;
@@ -292,14 +294,16 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
                         .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
                         //.placeholder(R.drawable.ab_gradient_dark)
                         .into(((PPViewHolder) holder).binding.mainImageView);
+
+                ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
             }
 
-            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
-                Picasso.with(getContext())
-                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
-                        //.placeholder(R.drawable.ab_gradient_dark)
-                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
-            }
+//            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
+//                Picasso.with(getContext())
+//                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
+//                        //.placeholder(R.drawable.ab_gradient_dark)
+//                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
+//            }
         }
 
         @Override

@@ -1,6 +1,7 @@
 package com.penn.ppj;
 
 import android.content.Intent;
+import android.content.res.TypedArray;
 import android.databinding.DataBindingUtil;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -19,7 +20,9 @@ import android.widget.TextView;
 import com.penn.ppj.databinding.FragmentDashboardBinding;
 import com.penn.ppj.databinding.MomentOverviewCellBinding;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
+import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.model.realm.Moment;
+import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPLoadController;
 import com.penn.ppj.util.PPLoadDataAdapter;
@@ -31,8 +34,12 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.Inflater;
 
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
+import io.reactivex.subjects.BehaviorSubject;
 import io.realm.OrderedCollectionChangeSet;
 import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
@@ -50,6 +57,8 @@ public class DashboardFragment extends Fragment {
     private PPAdapter ppAdapter;
     private GridLayoutManager gridLayoutManager;
 
+    private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
+
     public DashboardFragment() {
         // Required empty public constructor
     }
@@ -65,9 +74,12 @@ public class DashboardFragment extends Fragment {
         public void onClick(View v) {
             int position = binding.mainRecyclerView.getChildAdapterPosition(v);
             Moment moment = data.get(position);
-            Intent intent = new Intent(getContext(), MomentDetailActivity.class);
-            intent.putExtra("momentId", moment.getId());
-            startActivity(intent);
+
+            if (moment.getStatus().equals(MomentStatus.NET)) {
+                Intent intent = new Intent(getContext(), MomentDetailActivity.class);
+                intent.putExtra("momentId", moment.getId());
+                startActivity(intent);
+            }
         }
     };
 
@@ -89,6 +101,35 @@ public class DashboardFragment extends Fragment {
 
         data = realm.where(Moment.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
+
+        scrollDirection
+                .distinctUntilChanged()
+                .debounce(200, TimeUnit.MILLISECONDS)
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(@NonNull Integer integer) throws Exception {
+                        if (integer == PPHelper.UP) {
+                            EventBus.getDefault().post(new ToggleToolBarEvent(false));
+                        } else {
+                            EventBus.getDefault().post(new ToggleToolBarEvent(true));
+                        }
+                    }
+                });
+
+        binding.mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (dy > 0) {
+                    scrollDirection.onNext(PPHelper.UP);
+                } else if (dy < 0) {
+                    scrollDirection.onNext(PPHelper.DOWN);
+                }
+            }
+        });
+
+        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
 
         setup();
 
@@ -164,6 +205,7 @@ public class DashboardFragment extends Fragment {
         @Override
         public void onBindViewHolder(PPAdapter.PPHoldView holder, int position) {
             holder.binding.setData(data.get(position));
+            holder.binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
 //            Picasso.with(getContext())
 //                    .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
 //                    //.placeholder(R.drawable.ab_gradient_dark)

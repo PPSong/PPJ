@@ -26,6 +26,7 @@
         <ImageView
             android:id="@+id/main_image_view"
             app:imageUrl="@{data.pic}"
+            android:scaleType="centerCrop"
             app:layout_aspectRatio="133%"
             app:layout_widthPercent="100%" />
 

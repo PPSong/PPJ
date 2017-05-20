@@ -2,6 +2,8 @@ package com.penn.ppj;
 
 import android.animation.ObjectAnimator;
 import android.animation.TimeInterpolator;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.databinding.BindingAdapter;
 import android.databinding.DataBindingUtil;
@@ -28,10 +30,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.BounceInterpolator;
 import android.view.animation.TranslateAnimation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -46,6 +50,7 @@ import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.model.realm.UserHomePage;
+import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
@@ -83,6 +88,7 @@ import static android.R.attr.resource;
 import static com.penn.ppj.PPApplication.getContext;
 import static com.penn.ppj.R.dimen.fab;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
+import static com.penn.ppj.util.PPHelper.ppFromString;
 import static io.reactivex.Observable.zip;
 
 public class MomentDetailActivity extends AppCompatActivity {
@@ -319,6 +325,21 @@ public class MomentDetailActivity extends AppCompatActivity {
                         }
                 );
 
+        //send comment按钮监控
+        Observable<Object> commentButtonObservable = RxView.clicks(binding.sendCommentImageButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        commentButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                sendComment();
+                            }
+                        }
+                );
+
         //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
         //这里不用延时的话会导致momentDetailHeadBinding null错误
         binding.mainRecyclerView.post(new Runnable() {
@@ -327,6 +348,84 @@ public class MomentDetailActivity extends AppCompatActivity {
                 getMomentDetail();
             }
         });
+
+        Picasso.with(this).load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).into(binding.commentAvatarCircleImageView);
+    }
+
+    private void sendComment() {
+        //插入到本地数据库
+        final long now = System.currentTimeMillis();
+        String content = binding.commentTextInputEditText.getText().toString();
+
+        final Comment comment = new Comment();
+        comment.setKey(now + "_" + PPHelper.currentUserId);
+        comment.setUserId(PPHelper.currentUserId);
+        comment.setMomentId(momentId);
+        comment.setCreateTime(now);
+        comment.setNickname(PPHelper.currentUserNickname);
+        comment.setAvatar(PPHelper.currentUserAvatar);
+        comment.setContent(content);
+        comment.setStatus(CommentStatus.LOCAL);
+        comment.setLastVisitTime(now);
+
+        realm.beginTransaction();
+
+        realm.copyToRealm(comment);
+
+        realm.commitTransaction();
+
+        //清空输入框
+        binding.commentTextInputEditText.setText("");
+        binding.commentTextInputEditText.clearFocus();
+        binding.mainRecyclerView.smoothScrollToPosition(0);
+        PPHelper.hideKeyboard(this);
+
+        //发送comment
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("id", momentId)
+                .put("content", content)
+                .put("isPrivate", "false");
+
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api("moment.reply", jBody.getJSONObject());
+
+        final Comment comment2 = realm.where(Comment.class).equalTo("key", now + "_" + PPHelper.currentUserId).findFirst();
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+
+                                PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                Log.v("pplog", "in:" + realm.isInTransaction());
+                                realm.beginTransaction();
+                                comment2.setStatus(CommentStatus.NET);
+                                realm.copyToRealm(comment2);
+
+                                realm.commitTransaction();
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                realm.beginTransaction();
+                                comment2.setStatus(CommentStatus.FAILED);
+                                realm.copyToRealm(comment2);
+
+                                realm.commitTransaction();
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
     }
 
     @Override
@@ -394,13 +493,13 @@ public class MomentDetailActivity extends AppCompatActivity {
         long now = System.currentTimeMillis();
 
         MomentDetail momentDetail = new MomentDetail();
-        momentDetail.setId(PPHelper.ppFromString(momentDetailString, "data._id").getAsString());
-        momentDetail.setContent(PPHelper.ppFromString(momentDetailString, "data.content").getAsString());
-        momentDetail.setLiked(PPHelper.ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
-        momentDetail.setCreateTime(PPHelper.ppFromString(momentDetailString, "data.createTime").getAsLong());
-        momentDetail.setPic(PPHelper.ppFromString(momentDetailString, "data.pics.0").getAsString());
-        momentDetail.setAvatar(PPHelper.ppFromString(momentDetailString, "data._creator.head").getAsString());
-        momentDetail.setNickname(PPHelper.ppFromString(momentDetailString, "data._creator.nickname").getAsString());
+        momentDetail.setId(ppFromString(momentDetailString, "data._id").getAsString());
+        momentDetail.setContent(ppFromString(momentDetailString, "data.content").getAsString());
+        momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
+        momentDetail.setCreateTime(ppFromString(momentDetailString, "data.createTime").getAsLong());
+        momentDetail.setPic(ppFromString(momentDetailString, "data.pics.0").getAsString());
+        momentDetail.setAvatar(ppFromString(momentDetailString, "data._creator.head").getAsString());
+        momentDetail.setNickname(ppFromString(momentDetailString, "data._creator.nickname").getAsString());
         momentDetail.setLastVisitTime(now);
 
         realm.insertOrUpdate(momentDetail);
@@ -414,7 +513,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         binding.setData(momentDetail);
     }
 
-    private void setupBindingData(MomentDetail momentDetail) {
+    private void setupBindingData(final MomentDetail momentDetail) {
         Log.v("pplog", "setupBindingData start");
         if (momentDetail == null) {
             Log.v("pplog", "setupBindingData cancel");
@@ -423,6 +522,7 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         synchronized (this) {
             if (this.momentDetail == null) {
+                Log.v("pplog255", "setVisibility:" + (momentDetail.getUserId().equals(PPHelper.currentUserId)));
                 this.momentDetail = momentDetail;
                 this.momentDetail.addChangeListener(momentDetailChangeListener);
                 Log.v("pplog", "setupBindingData ok");
@@ -433,6 +533,10 @@ public class MomentDetailActivity extends AppCompatActivity {
                 binding.mainRecyclerView.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        if (momentDetail.getUserId().equals(PPHelper.currentUserId)) {
+                            Log.v("pplog255", "setVisibility");
+                            momentDetailHeadBinding.relatedUsersLinearLayout.setVisibility(View.VISIBLE);
+                        }
                         setupLikeButton();
                     }
                 }, 200);
@@ -540,28 +644,36 @@ public class MomentDetailActivity extends AppCompatActivity {
         long now = System.currentTimeMillis();
 
         MomentDetail momentDetail = new MomentDetail();
-        momentDetail.setId(PPHelper.ppFromString(momentDetailString, "data._id").getAsString());
-        momentDetail.setContent(PPHelper.ppFromString(momentDetailString, "data.content").getAsString());
-        momentDetail.setLiked(PPHelper.ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
-        momentDetail.setCreateTime(PPHelper.ppFromString(momentDetailString, "data.createTime").getAsLong());
-        momentDetail.setPic(PPHelper.ppFromString(momentDetailString, "data.pics.0").getAsString());
-        momentDetail.setAvatar(PPHelper.ppFromString(momentDetailString, "data._creator.head").getAsString());
-        momentDetail.setNickname(PPHelper.ppFromString(momentDetailString, "data._creator.nickname").getAsString());
+        momentDetail.setId(ppFromString(momentDetailString, "data._id").getAsString());
+        momentDetail.setUserId(ppFromString(momentDetailString, "data._creator.id").getAsString());
+        momentDetail.setContent(ppFromString(momentDetailString, "data.content").getAsString());
+        momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
+        momentDetail.setCreateTime(ppFromString(momentDetailString, "data.createTime").getAsLong());
+        momentDetail.setPic(ppFromString(momentDetailString, "data.pics.0").getAsString());
+        momentDetail.setAvatar(ppFromString(momentDetailString, "data._creator.head").getAsString());
+        momentDetail.setNickname(ppFromString(momentDetailString, "data._creator.nickname").getAsString());
         momentDetail.setLastVisitTime(now);
 
-        JsonArray ja = PPHelper.ppFromString(commentsString, "data.list").getAsJsonArray();
+        JsonArray ja = ppFromString(commentsString, "data.list").getAsJsonArray();
 
         try (Realm realm = Realm.getDefaultInstance()) {
             realm.beginTransaction();
 
             for (int i = 0; i < ja.size(); i++) {
+
+                long createTime = PPHelper.ppFromString(commentsString, "data.list." + i + ".createTime").getAsLong();
+                String userId = PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.id").getAsString();
+
                 Comment comment = new Comment();
+                comment.setKey(createTime + "_" + userId);
                 comment.setId(PPHelper.ppFromString(commentsString, "data.list." + i + "._id").getAsString());
+                comment.setUserId(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.id").getAsString());
                 comment.setMomentId(momentId);
                 comment.setContent(PPHelper.ppFromString(commentsString, "data.list." + i + ".content").getAsString());
-                comment.setCreateTime(PPHelper.ppFromString(commentsString, "data.list." + i + ".createTime").getAsLong());
+                comment.setCreateTime(createTime);
                 comment.setNickname(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.nickname").getAsString());
                 comment.setAvatar(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.head").getAsString());
+                comment.setStatus(CommentStatus.NET);
                 comment.setLastVisitTime(now);
                 realm.insertOrUpdate(comment);
             }

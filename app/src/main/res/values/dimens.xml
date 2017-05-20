@@ -15,4 +15,6 @@
     <dimen name="icon">32dp</dimen>
     <dimen name="small">8dp</dimen>
     <dimen name="fab">56dp</dimen>
+    <dimen name="comment_input_height">64dp</dimen>
+    <dimen name="button_height">48dp</dimen>
 </resources>

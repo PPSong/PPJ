@@ -206,7 +206,7 @@ public class CreateMomentActivity extends TakePhotoActivity {
 
     private void validatePublish() {
         String result = momentCreating.validatePublish();
-        if (result != "OK") {
+        if (!result.equalsIgnoreCase("OK")) {
             binding.publishButton.setEnabled(false);
             //PPHelper.error(result);
             Log.v("pplog", result);

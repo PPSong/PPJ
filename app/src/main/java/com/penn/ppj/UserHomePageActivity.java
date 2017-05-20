@@ -8,6 +8,7 @@ import android.util.Log;
 import android.widget.CompoundButton;
 
 import com.google.gson.JsonArray;
+import com.jakewharton.rxbinding2.view.RxView;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.ActivityUserHomePageBinding;
 import com.penn.ppj.model.realm.Comment;
@@ -18,14 +19,20 @@ import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 
+import java.util.concurrent.TimeUnit;
+
 import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
+
+import static com.penn.ppj.R.id.liked;
 
 public class UserHomePageActivity extends AppCompatActivity {
 
@@ -52,15 +59,32 @@ public class UserHomePageActivity extends AppCompatActivity {
             }
         });
 
+        //like按钮监控
+        Observable<Object> followButtonObservable = RxView.clicks(binding.followToggleButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        followButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                boolean followed = binding.followToggleButton.isChecked();
+                                Log.v("pplog", "follow2:" + followed);
+                                followOrUnfollowMoment(followed);
+                            }
+                        }
+                );
+
         realm = Realm.getDefaultInstance();
 
         userId = getIntent().getStringExtra("userId");
 
         UserHomePage tmpUserHomePage = realm.where(UserHomePage.class).equalTo("userId", userId).findFirst();
+        Log.v("pplog", "follow1:" + tmpUserHomePage.isFollowed());
 
         if (tmpUserHomePage != null) {
             try (Realm realm = Realm.getDefaultInstance()) {
-
                 realm.beginTransaction();
                 tmpUserHomePage.setLastVisitTime(System.currentTimeMillis());
                 realm.commitTransaction();
@@ -83,6 +107,43 @@ public class UserHomePageActivity extends AppCompatActivity {
     protected void onDestroy() {
         realm.close();
         super.onDestroy();
+    }
+
+    private void followOrUnfollowMoment(boolean follow) {
+        String api = follow ? "friend.follow" : "friend.unFollow";
+
+        Log.v("pplog253", "api:" + api + ",userId:" + userId);
+
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("target", userId)
+                .put("isFree", "true");
+
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api(api, jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                getServerUserHomePage(userId);
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                                restoreLocalUserHomePage();
+                            }
+                        }
+                );
+    }
+
+    private void restoreLocalUserHomePage() {
+        binding.setData(userHomePage);
     }
 
     private void setupBindingData(UserHomePage userHomePage) {
@@ -144,6 +205,7 @@ public class UserHomePageActivity extends AppCompatActivity {
                                 }
 
                                 processUserHomePage(result[0], result[1]);
+                                Log.v("pplog", "getServerUserHomePage:" + result[0]);
 
                                 if (userHomePage == null) {
                                     setupBindingData(realm.where(UserHomePage.class).equalTo("userId", userId).findFirst());

@@ -37,6 +37,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.gson.JsonArray;
+import com.jakewharton.rxbinding2.view.RxView;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.CommentCellBinding;
 import com.penn.ppj.databinding.MomentDetailHeadBinding;
@@ -58,12 +59,15 @@ import com.squareup.picasso.Target;
 import junit.framework.Test;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.OrderedCollectionChangeSet;
 import io.realm.OrderedRealmCollectionChangeListener;
@@ -77,6 +81,7 @@ import io.realm.Sort;
 import static android.R.attr.data;
 import static android.R.attr.resource;
 import static com.penn.ppj.PPApplication.getContext;
+import static com.penn.ppj.R.dimen.fab;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
 import static io.reactivex.Observable.zip;
 
@@ -285,11 +290,11 @@ public class MomentDetailActivity extends AppCompatActivity {
                 if (binding.mainRecyclerView.computeVerticalScrollOffset() < maxOffset) {
                     binding.mainImageView.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
                     binding.mainImageView.setElevation(0);
-                    binding.likeFloatingActionButton.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
+                    binding.likeFabToggle.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
                 } else {
                     binding.mainImageView.setTranslationY(-maxOffset);
                     binding.mainImageView.setElevation(16);
-                    binding.likeFloatingActionButton.setTranslationY(-maxOffset);
+                    binding.likeFabToggle.setTranslationY(-maxOffset);
                 }
             }
         });
@@ -297,12 +302,22 @@ public class MomentDetailActivity extends AppCompatActivity {
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 //        setSupportActionBar(toolbar);
 
-        binding.likeFloatingActionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getMomentDetail();
-            }
-        });
+        //like按钮监控
+        Observable<Object> likeButtonObservable = RxView.clicks(binding.likeFabToggle)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        likeButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                boolean liked = binding.likeFabToggle.isChecked();
+                                binding.likeFabToggle.setChecked(!liked);
+                                likeOrUnlikeMoment(!liked);
+                            }
+                        }
+                );
 
         //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
         //这里不用延时的话会导致momentDetailHeadBinding null错误
@@ -318,6 +333,85 @@ public class MomentDetailActivity extends AppCompatActivity {
     protected void onDestroy() {
         realm.close();
         super.onDestroy();
+    }
+
+    private void likeOrUnlikeMoment(boolean like) {
+        String api = like ? "moment.like" : "moment.unLike";
+
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("id", momentId);
+
+        Log.v("pplog252", api);
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api(api, jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .flatMap(new Function<String, ObservableSource<String>>() {
+                    @Override
+                    public ObservableSource<String> apply(@NonNull String s) throws Exception {
+                        PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                        if (ppWarn != null) {
+                            throw new Exception(ppWarn.msg);
+                        }
+
+                        //请求服务器最新MomentDetail记录
+                        PPJSONObject jBody1 = new PPJSONObject();
+                        jBody1
+                                .put("id", momentId)
+                                .put("checkFollow", "1")
+                                .put("checkLike", "1");
+
+                        final Observable<String> apiResult1 = PPRetrofit.getInstance().api("moment.detail", jBody1.getJSONObject());
+
+                        return apiResult1;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                updateLocalMomentDetail(s);
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                                restoreLocalMomentDetail();
+                            }
+                        }
+                );
+    }
+
+    private void updateLocalMomentDetail(String momentDetailString) {
+        realm.beginTransaction();
+
+        long now = System.currentTimeMillis();
+
+        MomentDetail momentDetail = new MomentDetail();
+        momentDetail.setId(PPHelper.ppFromString(momentDetailString, "data._id").getAsString());
+        momentDetail.setContent(PPHelper.ppFromString(momentDetailString, "data.content").getAsString());
+        momentDetail.setLiked(PPHelper.ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
+        momentDetail.setCreateTime(PPHelper.ppFromString(momentDetailString, "data.createTime").getAsLong());
+        momentDetail.setPic(PPHelper.ppFromString(momentDetailString, "data.pics.0").getAsString());
+        momentDetail.setAvatar(PPHelper.ppFromString(momentDetailString, "data._creator.head").getAsString());
+        momentDetail.setNickname(PPHelper.ppFromString(momentDetailString, "data._creator.nickname").getAsString());
+        momentDetail.setLastVisitTime(now);
+
+        realm.insertOrUpdate(momentDetail);
+
+        realm.commitTransaction();
+
+        binding.setData(momentDetail);
+    }
+
+    private void restoreLocalMomentDetail() {
+        binding.setData(momentDetail);
     }
 
     private void setupBindingData(MomentDetail momentDetail) {
@@ -351,11 +445,11 @@ public class MomentDetailActivity extends AppCompatActivity {
     private void setupLikeButton() {
         final int titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
         final int headPicHeight = calculateHeadHeight(this);
-        final int floatingButtonHalfHeight = binding.likeFloatingActionButton.getHeight() / 2;
+        final int floatingButtonHalfHeight = binding.likeFabToggle.getHeight() / 2;
 
         Log.v("pplog250", "" + titleHeight + "," + headPicHeight + "," + floatingButtonHalfHeight);
 
-        PPHelper.likeButtonAppear(this, binding.likeFloatingActionButton, titleHeight + headPicHeight - floatingButtonHalfHeight);
+        PPHelper.likeButtonAppear(this, binding.likeFabToggle, titleHeight + headPicHeight - floatingButtonHalfHeight);
     }
 
     private void getMomentDetail() {
@@ -448,6 +542,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         MomentDetail momentDetail = new MomentDetail();
         momentDetail.setId(PPHelper.ppFromString(momentDetailString, "data._id").getAsString());
         momentDetail.setContent(PPHelper.ppFromString(momentDetailString, "data.content").getAsString());
+        momentDetail.setLiked(PPHelper.ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
         momentDetail.setCreateTime(PPHelper.ppFromString(momentDetailString, "data.createTime").getAsLong());
         momentDetail.setPic(PPHelper.ppFromString(momentDetailString, "data.pics.0").getAsString());
         momentDetail.setAvatar(PPHelper.ppFromString(momentDetailString, "data._creator.head").getAsString());

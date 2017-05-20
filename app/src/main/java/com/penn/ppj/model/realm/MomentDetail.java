@@ -20,6 +20,8 @@ public class MomentDetail extends RealmObject {
     private String avatar;
     private String nickname;
     private String content;
+    private boolean liked;
+
     private long lastVisitTime;
 
     public String getId() {
@@ -76,5 +78,13 @@ public class MomentDetail extends RealmObject {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public boolean isLiked() {
+        return liked;
+    }
+
+    public void setLiked(boolean liked) {
+        this.liked = liked;
     }
 }

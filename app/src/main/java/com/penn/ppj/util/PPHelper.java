@@ -694,26 +694,26 @@ public class PPHelper {
             Picasso.with(getContext())
                     .load(picUrl)
                     .error(R.mipmap.ic_launcher)
-                    .into(imageView);
-//                    .into(new Target() {
-//                        //pptodo 改进取色方案
-//                        @Override
-//                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-//                    /* Save the bitmap or do something with it here */
-//                            Palette p = Palette.from(bitmap).generate();
-//                            //Set it in the ImageView
-//                            imageView.setImageBitmap(bitmap);
-//                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
-//                        }
-//
-//                        @Override
-//                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-//                        }
-//
-//                        @Override
-//                        public void onBitmapFailed(Drawable errorDrawable) {
-//                        }
-//                    });
+          //          .into(imageView);
+                    .into(new Target() {
+                        //pptodo 改进取色方案
+                        @Override
+                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+                    /* Save the bitmap or do something with it here */
+                            Palette p = Palette.from(bitmap).generate();
+                            //Set it in the ImageView
+                            imageView.setImageBitmap(bitmap);
+                            imageView.setBackground(new ColorDrawable(p.getVibrantColor(getContext().getResources().getColor(R.color.colorPrimaryDark))));
+                        }
+
+                        @Override
+                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+                        }
+
+                        @Override
+                        public void onBitmapFailed(Drawable errorDrawable) {
+                        }
+                    });
         } else if (size == 180) {
             Log.v("pplog", "180");
             String picUrl = get180ImageUrl(pic);

@@ -5,6 +5,14 @@
     <color name="colorAccent">#FF4081</color>
     <color name="mid_grey">#40808080</color>
 
+    <color name="text_primary_light">#ffffffff</color>
+
     <color name="inline_action_icon">#ff757575</color> <!-- grey 600 -->
     <color name="light_icon">#ffffffff</color>
+    <color name="fab_heart_empty">@color/text_primary_light</color>
+    <color name="fab_heart_progress_bar">#deffffff</color> <!-- 87% white-->
+    <color name="fab_heart_full">#ffffffff</color>
+
+    <color name="ripple_light">#99ffffff</color>
+    <color name="dribbble">#fff06292</color> <!-- pink 300 -->
 </resources>

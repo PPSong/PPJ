@@ -14,7 +14,8 @@
 
     <android.support.percent.PercentFrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@android:color/white">
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/main_recycler_view"
@@ -27,14 +28,18 @@
             app:layout_aspectRatio="133%"
             app:layout_widthPercent="100%" />
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/like_floating_action_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <com.penn.ppj.ppWidget.FABToggle
+            android:id="@+id/like_fab_toggle"
+            android:layout_width="@dimen/fab"
+            android:layout_height="@dimen/fab"
             android:layout_gravity="end"
-            android:layout_marginRight="@dimen/common"
-            android:visibility="invisible"
-            app:srcCompat="@drawable/ic_favorite_border_black_24dp" />
+            android:layout_marginEnd="@dimen/common"
+            android:background="@drawable/fab_dribbble_fav"
+            android:elevation="9dp"
+            android:src="@drawable/asl_fab_heart"
+            android:checked="@{data.liked}"
+            android:stateListAnimator="@animator/raise"
+            android:visibility="invisible" />
 
     </android.support.percent.PercentFrameLayout>
 

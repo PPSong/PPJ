@@ -14,4 +14,5 @@
     <dimen name="avatar">48dp</dimen>
     <dimen name="icon">32dp</dimen>
     <dimen name="small">8dp</dimen>
+    <dimen name="fab">56dp</dimen>
 </resources>

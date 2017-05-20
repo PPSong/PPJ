@@ -39,7 +39,6 @@
             android:checked="@{data.followed}"
             android:drawablePadding="@dimen/small"
             android:drawableStart="@drawable/asl_follow"
-            android:text="@string/follow"
             android:textOff="@string/follow"
             android:textOn="@string/unfollowing" />
 

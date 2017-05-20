@@ -221,6 +221,7 @@ public class CreateMomentActivity extends TakePhotoActivity {
         //把momentCreating放入Moment
         Moment moment = new Moment();
         moment.setKey(momentCreating.getId());
+        moment.setUserId(PPHelper.currentUserId);
         moment.setCreateTime(momentCreating.getCreateTime());
         moment.setStatus(MomentStatus.LOCAL);
         Pic pic = new Pic();

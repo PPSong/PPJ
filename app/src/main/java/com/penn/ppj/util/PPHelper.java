@@ -212,7 +212,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = false;
+        boolean clearData = true;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -778,6 +778,7 @@ public class PPHelper {
                             Moment moment = new Moment();
                             moment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data._creator.id").getAsString());
                             moment.setId(PPHelper.ppFromString(s, "data._id").getAsString());
+                            moment.setUserId(PPHelper.ppFromString(s, "data._creator.id").getAsString());
                             moment.setCreateTime(createTime);
                             moment.setStatus(MomentStatus.NET);
                             moment.setAvatar(PPHelper.ppFromString(s, "data._creator.head").getAsString());
@@ -818,6 +819,7 @@ public class PPHelper {
                 Moment moment = new Moment();
                 moment.setKey(createTime + "_" + PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.id").getAsString());
                 moment.setId(PPHelper.ppFromString(s, "data.timeline." + i + ".id").getAsString());
+                moment.setUserId(PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.id").getAsString());
                 moment.setCreateTime(createTime);
                 moment.setStatus(MomentStatus.NET);
                 moment.setAvatar(PPHelper.ppFromString(s, "data.timeline." + i + "._info._creator.head").getAsString());

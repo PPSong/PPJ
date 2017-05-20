@@ -14,6 +14,7 @@ public class Moment extends RealmObject {
     @PrimaryKey
     private String key;//createTime_creatorUserId
     private String id;
+    private String userId;
     private long createTime;
     private String status;
     private Pic pic;
@@ -33,6 +34,14 @@ public class Moment extends RealmObject {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public long getCreateTime() {

@@ -14,6 +14,7 @@ import com.penn.ppj.databinding.ActivityUserHomePageBinding;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.UserHomePage;
+import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
@@ -81,7 +82,6 @@ public class UserHomePageActivity extends AppCompatActivity {
         userId = getIntent().getStringExtra("userId");
 
         UserHomePage tmpUserHomePage = realm.where(UserHomePage.class).equalTo("userId", userId).findFirst();
-        Log.v("pplog", "follow1:" + tmpUserHomePage.isFollowed());
 
         if (tmpUserHomePage != null) {
             try (Realm realm = Realm.getDefaultInstance()) {
@@ -101,6 +101,8 @@ public class UserHomePageActivity extends AppCompatActivity {
         setupBindingData(tmpUserHomePage);
 
         getServerUserHomePage(userId);
+
+        showUserMoments(userId);
     }
 
     @Override
@@ -241,5 +243,10 @@ public class UserHomePageActivity extends AppCompatActivity {
 
             realm.commitTransaction();
         }
+    }
+
+    private void showUserMoments(String userId) {
+        FriendMomentBottomSheetFragment friendMomentBottomSheetFragment = FriendMomentBottomSheetFragment.newInstance(userId);
+        friendMomentBottomSheetFragment.show(getSupportFragmentManager(), friendMomentBottomSheetFragment.getTag());
     }
 }

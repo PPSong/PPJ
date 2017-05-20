@@ -20,11 +20,13 @@
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/main_toolbar"
-                android:background="@drawable/ab_gradient_dark"
+                style="@style/Widget.Plaid.HomeToolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:theme="@style/PPActionBar"
-                android:fitsSystemWindows="true" />
+                android:elevation="1dp"
+                android:outlineProvider="none"
+                app:titleTextAppearance="@style/TextAppearance.ToolbarTitleSmallCaps"
+                app:title="@string/jiban" />
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/main_floating_action_button"

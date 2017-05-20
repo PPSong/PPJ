@@ -160,6 +160,9 @@ public class MainActivity extends AppCompatActivity
         binding.mainViewPager.setAdapter(adapter);
         //有几个tab就设几防止page自己重新刷新
         binding.mainViewPager.setOffscreenPageLimit(3);
+
+        ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, binding.mainDrawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        mDrawerToggle.setDrawerIndicatorEnabled(false);
     }
 
 //    @Override

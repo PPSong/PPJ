@@ -17,4 +17,6 @@
     <dimen name="fab">56dp</dimen>
     <dimen name="comment_input_height">64dp</dimen>
     <dimen name="button_height">48dp</dimen>
+
+    <dimen name="z_app_bar">4dp</dimen>
 </resources>

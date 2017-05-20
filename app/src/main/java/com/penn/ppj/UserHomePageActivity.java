@@ -1,17 +1,27 @@
 package com.penn.ppj;
 
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.transition.TransitionManager;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CompoundButton;
 
 import com.google.gson.JsonArray;
 import com.jakewharton.rxbinding2.view.RxView;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.ActivityUserHomePageBinding;
+import com.penn.ppj.databinding.MomentOverviewCellBinding;
 import com.penn.ppj.model.realm.Comment;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.RelatedUserType;
@@ -20,6 +30,7 @@ import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -32,7 +43,10 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
+import io.realm.RealmResults;
+import io.realm.Sort;
 
+import static com.penn.ppj.PPApplication.getContext;
 import static com.penn.ppj.R.id.liked;
 
 public class UserHomePageActivity extends AppCompatActivity {
@@ -46,6 +60,52 @@ public class UserHomePageActivity extends AppCompatActivity {
     private UserHomePage userHomePage;
 
     private RealmChangeListener<UserHomePage> userHomePageChangeListener;
+
+    private BottomSheetBehavior mBottomSheetBehavior;
+
+    private RealmResults<Moment> moments;
+    private PPAdapter ppAdapter;
+    private GridLayoutManager gridLayoutManager;
+    private View.OnClickListener momentOnClickListener;
+
+    class PPAdapter extends RecyclerView.Adapter<PPAdapter.PPViewHolder> {
+        private List<Moment> data;
+
+        public class PPViewHolder extends RecyclerView.ViewHolder {
+            private MomentOverviewCellBinding binding;
+
+            public PPViewHolder(MomentOverviewCellBinding binding) {
+                super(binding.getRoot());
+                this.binding = binding;
+            }
+        }
+
+        public PPAdapter(List<Moment> data) {
+            this.data = data;
+        }
+
+        @Override
+        public PPViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
+            MomentOverviewCellBinding momentOverviewCellBinding = MomentOverviewCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+
+            momentOverviewCellBinding.getRoot().setOnClickListener(momentOnClickListener);
+
+            return new PPViewHolder(momentOverviewCellBinding);
+
+        }
+
+        @Override
+        public void onBindViewHolder(PPViewHolder holder, int position) {
+
+            holder.binding.setData(moments.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return data.size();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,7 +162,41 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         getServerUserHomePage(userId);
 
-        showUserMoments(userId);
+        mBottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet1);
+
+        mBottomSheetBehavior.setHideable(false);
+
+        TypedValue tv = new TypedValue();
+//        int actionBarHeight = 0;
+//        if (getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true))
+//        {
+//            actionBarHeight = TypedValue.complexToDimensionPixelSize(tv.data,getResources().getDisplayMetrics());
+//        }
+
+        mBottomSheetBehavior.setPeekHeight(PPHelper.calculateMomentOverHeight());
+        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        moments = realm.where(Moment.class).equalTo("userId", userId).findAllSorted("createTime", Sort.DESCENDING);
+
+        gridLayoutManager = new GridLayoutManager(this, PPHelper.calculateNoOfColumns(this));
+
+        momentOnClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+                Moment moment = moments.get(position);
+                Intent intent = new Intent(getContext(), MomentDetailActivity.class);
+                intent.putExtra("momentId", moment.getId());
+                startActivity(intent);
+            }
+        };
+
+        binding.mainRecyclerView.setLayoutManager(gridLayoutManager);
+
+        ppAdapter = new PPAdapter(moments);
+        binding.mainRecyclerView.setAdapter(ppAdapter);
+
+        //showUserMoments(userId);
     }
 
     @Override

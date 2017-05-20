@@ -389,6 +389,15 @@ public class PPHelper {
         return height_4_3;
     }
 
+    public static int calculateMomentOverHeight() {
+        Context context = PPApplication.getContext();
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels;
+        int result = (int) ((dpWidth / calculateNoOfColumns(context)) * 9 / 16);
+
+        return result;
+    }
+
     public static void likeButtonAppear(Context context, View floatingActionButton, int topMargin) {
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) floatingActionButton.getLayoutParams();
         params.topMargin = topMargin;
@@ -694,7 +703,7 @@ public class PPHelper {
             Picasso.with(getContext())
                     .load(picUrl)
                     .error(R.mipmap.ic_launcher)
-          //          .into(imageView);
+                    //          .into(imageView);
                     .into(new Target() {
                         //pptodo 改进取色方案
                         @Override

@@ -494,21 +494,15 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void updateLocalMomentDetail(String momentDetailString) {
+        String momentId = ppFromString(momentDetailString, "data._id").getAsString();
+
         realm.beginTransaction();
 
         long now = System.currentTimeMillis();
 
-        MomentDetail momentDetail = new MomentDetail();
-        momentDetail.setId(ppFromString(momentDetailString, "data._id").getAsString());
-        momentDetail.setContent(ppFromString(momentDetailString, "data.content").getAsString());
+        MomentDetail momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
         momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
-        momentDetail.setCreateTime(ppFromString(momentDetailString, "data.createTime").getAsLong());
-        momentDetail.setPic(ppFromString(momentDetailString, "data.pics.0").getAsString());
-        momentDetail.setAvatar(ppFromString(momentDetailString, "data._creator.head").getAsString());
-        momentDetail.setNickname(ppFromString(momentDetailString, "data._creator.nickname").getAsString());
         momentDetail.setLastVisitTime(now);
-
-        realm.insertOrUpdate(momentDetail);
 
         realm.commitTransaction();
 

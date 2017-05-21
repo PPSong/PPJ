@@ -1,5 +1,6 @@
 package com.penn.ppj;
 
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.os.Handler;
@@ -51,6 +52,7 @@ import io.realm.RealmResults;
 import io.realm.Sort;
 
 import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
+import static com.penn.ppj.R.string.moment;
 
 public class NearbyFragment extends Fragment implements PPLoadController.LoadDataProvider {
 
@@ -65,7 +67,18 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     private PPLoadController ppLoadController;
 
     private long earliestCreateTime = 0;
-    private Geo geo;
+    private String geoStr;
+
+    private final View.OnClickListener momentOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+            NearbyMoment nearbyMoment = data.get(position);
+            Intent intent = new Intent(getContext(), MomentDetailActivity.class);
+            intent.putExtra("momentId", nearbyMoment.getId());
+            startActivity(intent);
+        }
+    };
 
     public NearbyFragment() {
         // Required empty public constructor
@@ -91,14 +104,14 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         View view = binding.getRoot();
         //end common
 
-        geo = PPHelper.getLatestGeo();
-
         realm = Realm.getDefaultInstance();
 
         data = realm.where(NearbyMoment.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
         binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+
+        geoStr = PPHelper.getLatestGeoString();
 
         setup();
 
@@ -188,11 +201,11 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
 
     @Override
     public void refreshData() {
+        geoStr = PPHelper.getLatestGeoString();
         earliestCreateTime = 0;
         PPJSONObject jBody = new PPJSONObject();
-        geo = PPHelper.getLatestGeo();
         jBody
-                .put("geo", geo.lon + "," + geo.lat)
+                .put("geo", geoStr)
                 .put("before", earliestCreateTime);
 
         final Observable<String> apiResult = PPRetrofit.getInstance().api("moment.search", jBody.getJSONObject());
@@ -228,7 +241,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     public void loadMoreData() {
         PPJSONObject jBody = new PPJSONObject();
         jBody
-                .put("geo", geo.lon + "," + geo.lat)
+                .put("geo", geoStr)
                 .put("before", earliestCreateTime);
 
         final Observable<String> apiResult = PPRetrofit.getInstance().api("moment.search", jBody.getJSONObject());
@@ -278,6 +291,8 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         @Override
         protected RecyclerView.ViewHolder ppOnCreateViewHolder(ViewGroup parent, int viewType) {
             NearbyMomentOverviewCellBinding nearbyMomentOverviewCellBinding = NearbyMomentOverviewCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+
+            nearbyMomentOverviewCellBinding.getRoot().setOnClickListener(momentOnClickListener);
 
             return new PPViewHolder(nearbyMomentOverviewCellBinding);
         }

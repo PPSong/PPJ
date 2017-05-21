@@ -29,4 +29,5 @@
     <string name="moment">片刻</string>
     <string name="jiban">Jiban</string>
     <string name="exit_tips">如需退出请使用退出菜单键</string>
+    <string name="earth">地球上,出去走两步会获得具体地址</string>
 </resources>

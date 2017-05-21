@@ -30,7 +30,8 @@ public class PPSocketSingleton {
         Log.v("ppLog", "PPSocketSingleton");
         Log.v("pplog160", "socketUrl:" + url);
         try {
-            socket = IO.socket(url);
+            //pptodo 需要改进, 如果从sharepreference中去取而不是写死
+            socket = IO.socket("http://jbapp.magicfish.cn:80");
 
             socket
                     .on(

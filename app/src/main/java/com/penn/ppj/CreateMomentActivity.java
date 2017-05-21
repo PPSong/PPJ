@@ -165,10 +165,9 @@ public class CreateMomentActivity extends TakePhotoActivity {
     }
 
     private void getCurLocation() {
-        Geo geo = PPHelper.getLatestGeo();
         realm.beginTransaction();
-        momentCreating.setGeo("" + geo.lon + "," + geo.lat);
-        momentCreating.setAddress("address:" + geo.lon + "," + geo.lat);
+        momentCreating.setGeo(PPHelper.getLatestGeoString());
+        momentCreating.setAddress(PPHelper.getLatestAddress());
         realm.commitTransaction();
         //pptodo use baidu api to get real address
     }

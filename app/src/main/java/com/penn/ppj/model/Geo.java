@@ -13,7 +13,7 @@ public class Geo {
         this.lat = lat;
     }
 
-    public static Geo getDefaultGeo() {
-        return new Geo(121.52619934082031d, 31.216968536376953d);
+    public static String getDefaultGeoString() {
+        return "121.52619934082031,31.216968536376953";
     }
 }

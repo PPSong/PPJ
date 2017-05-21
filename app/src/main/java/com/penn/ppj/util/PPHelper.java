@@ -1,6 +1,7 @@
 package com.penn.ppj.util;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -79,6 +80,8 @@ public class PPHelper {
     public static final int TIMELINE_MINE_PAGE_SIZE = 20;
     public static final String APP_NAME = "PPJ";
     public static final String AUTH_BODY_KEY = "AUTH_BODY_KEY";
+    public static final String LATEST_GEO = "LATEST_GEO";
+    public static final String LATEST_ADDRESS = "LATEST_ADDRESS";
 
     public static final String qiniuBase = "http://7xu8w0.com1.z0.glb.clouddn.com/";
 
@@ -90,6 +93,8 @@ public class PPHelper {
     public static String currentUserAvatar;
     public static String socketUrl;
     public static String baiduAk;
+
+    private static ProgressDialog progressDialog;
 
     public static void clear() {
         currentUserId = null;
@@ -228,7 +233,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = false;
+        boolean clearData = true;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -428,9 +433,12 @@ public class PPHelper {
         floatingActionButton.startAnimation(AnimationUtils.loadAnimation(context, R.anim.appear));
     }
 
-    public static Geo getLatestGeo() {
-        //pptodo implement it
-        return Geo.getDefaultGeo();
+    public static String getLatestGeoString() {
+        return getPrefStringValue(LATEST_GEO, Geo.getDefaultGeoString());
+    }
+
+    public static String getLatestAddress() {
+        return getPrefStringValue(LATEST_ADDRESS, PPApplication.getContext().getString(R.string.earth));
     }
 
     public static void setPrefStringValue(String key, String value) {
@@ -484,6 +492,7 @@ public class PPHelper {
     }
 
     public static void getNewMessage(long mostNewCreateTime) {
+        Log.v("pplog303", "getNewMessage");
         final int pageSize = 20;
 
         PPJSONObject jBody = new PPJSONObject();
@@ -985,5 +994,16 @@ public class PPHelper {
             colors[i] = ta.getColor(i, 0);
         }
         return colors[position % ta.length()];
+    }
+
+    public static void showProgressDialog(Context context, String body, String title) {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.cancel();
+        }
+        progressDialog = ProgressDialog.show(context, title, body);
+    }
+
+    public static void hideProgressDialog() {
+        progressDialog.cancel();
     }
 }

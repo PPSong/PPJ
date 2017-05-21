@@ -13,6 +13,7 @@
     </data>
 
     <android.support.percent.PercentFrameLayout
+        android:id="@+id/main_percent_frame_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/white">
@@ -27,10 +28,13 @@
             android:id="@+id/main_image_view"
             app:imageUrl="@{data.pic}"
             android:scaleType="centerCrop"
+            android:background="@android:color/white"
             app:layout_aspectRatio="133%"
             app:layout_widthPercent="100%" />
 
         <android.support.constraint.ConstraintLayout
+            android:elevation="16dp"
+            android:background="@color/light_grey"
             android:layout_width="match_parent"
             android:layout_height="@dimen/comment_input_height"
             android:layout_gravity="bottom">
@@ -39,8 +43,9 @@
                 android:id="@+id/comment_avatar_circle_image_view"
                 android:layout_width="@dimen/avatar"
                 android:layout_height="@dimen/avatar"
+                android:padding="2dp"
                 android:layout_marginBottom="8dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginLeft="16dp"
                 android:layout_marginTop="8dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"

@@ -47,6 +47,7 @@ import io.realm.RealmResults;
 import io.realm.Sort;
 
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
+import static com.penn.ppj.util.PPHelper.hideKeyboard;
 import static com.penn.ppj.util.PPHelper.ppFromString;
 import static io.reactivex.Observable.zip;
 
@@ -133,32 +134,6 @@ public class MomentDetailActivity extends AppCompatActivity {
             Log.v("pplog", "onCreateViewHolder");
             if (viewType == HEAD) {
                 final MomentDetailHeadBinding tmpMomentDetailHeadBinding = MomentDetailHeadBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
-                tmpMomentDetailHeadBinding.likesButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.likesButton.getCompoundDrawables()[1]).start();
-                        //pptodo if users > 0
-                        showRelatedUsers(RelatedUserType.FAN);
-                    }
-                });
-
-                tmpMomentDetailHeadBinding.viewsButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.viewsButton.getCompoundDrawables()[1]).start();
-                        //pptodo if users > 0
-                        showRelatedUsers(RelatedUserType.FOLLOW);
-                    }
-                });
-
-                tmpMomentDetailHeadBinding.shareButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ((AnimatedVectorDrawable) tmpMomentDetailHeadBinding.shareButton.getCompoundDrawables()[1]).start();
-                        //pptodo if users > 0
-                        showRelatedUsers(RelatedUserType.FRIEND);
-                    }
-                });
 
                 momentDetailHeadBinding = tmpMomentDetailHeadBinding;
                 return new PPHead(tmpMomentDetailHeadBinding);
@@ -275,6 +250,16 @@ public class MomentDetailActivity extends AppCompatActivity {
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 //        setSupportActionBar(toolbar);
 
+        binding.commentTextInputEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    binding.commentTextInputEditText.clearFocus();
+                    hideKeyboard(MomentDetailActivity.this);
+                }
+            }
+        });
+
         //like按钮监控
         Observable<Object> likeButtonObservable = RxView.clicks(binding.likeFabToggle)
                 .debounce(200, TimeUnit.MILLISECONDS);
@@ -328,9 +313,13 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void sendComment() {
+        String content = binding.commentTextInputEditText.getText().toString();
+        if (TextUtils.isEmpty(content)) {
+            return;
+        }
+
         //插入到本地数据库
         final long now = System.currentTimeMillis();
-        String content = binding.commentTextInputEditText.getText().toString();
 
         final Comment comment = new Comment();
         comment.setKey(now + "_" + PPHelper.currentUserId);
@@ -502,10 +491,6 @@ public class MomentDetailActivity extends AppCompatActivity {
                 binding.mainRecyclerView.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (momentDetail.getUserId().equals(PPHelper.currentUserId)) {
-                            Log.v("pplog255", "setVisibility");
-                            momentDetailHeadBinding.relatedUsersLinearLayout.setVisibility(View.VISIBLE);
-                        }
                         setupLikeButton();
                     }
                 }, 200);

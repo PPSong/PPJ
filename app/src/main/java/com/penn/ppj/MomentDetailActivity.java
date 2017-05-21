@@ -1,44 +1,17 @@
 package com.penn.ppj;
 
-import android.animation.ObjectAnimator;
-import android.animation.TimeInterpolator;
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.databinding.BindingAdapter;
 import android.databinding.DataBindingUtil;
-import android.graphics.Bitmap;
-import android.graphics.Interpolator;
 import android.graphics.drawable.AnimatedVectorDrawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.BottomSheetDialogFragment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.graphics.Palette;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.view.animation.BounceInterpolator;
-import android.view.animation.TranslateAnimation;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.google.gson.JsonArray;
 import com.jakewharton.rxbinding2.view.RxView;
@@ -46,22 +19,14 @@ import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.CommentCellBinding;
 import com.penn.ppj.databinding.MomentDetailHeadBinding;
 import com.penn.ppj.model.realm.Comment;
-import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
-import com.penn.ppj.model.realm.Pic;
-import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.CommentStatus;
-import com.penn.ppj.ppEnum.MomentStatus;
-import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
-
-import junit.framework.Test;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -78,15 +43,9 @@ import io.realm.OrderedCollectionChangeSet;
 import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
-import io.realm.RealmList;
-import io.realm.RealmModel;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
-import static android.R.attr.data;
-import static android.R.attr.resource;
-import static com.penn.ppj.PPApplication.getContext;
-import static com.penn.ppj.R.dimen.fab;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
 import static com.penn.ppj.util.PPHelper.ppFromString;
 import static io.reactivex.Observable.zip;
@@ -111,6 +70,10 @@ public class MomentDetailActivity extends AppCompatActivity {
     private LinearLayoutManager linearLayoutManager;
 
     private MomentDetailHeadBinding momentDetailHeadBinding;
+
+    private int likeButtonMaxOffset;
+
+    private int mainImageMaxOffset;
 
     private final View.OnClickListener commentOnClickListener = new View.OnClickListener() {
         @Override
@@ -288,19 +251,23 @@ public class MomentDetailActivity extends AppCompatActivity {
         binding.mainRecyclerView.setLayoutManager(linearLayoutManager);
         binding.mainRecyclerView.setAdapter(ppAdapter);
 
-        final int maxOffset = PPHelper.calculateHeadMaxOffset(MomentDetailActivity.this);
         binding.mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (binding.mainRecyclerView.computeVerticalScrollOffset() < maxOffset) {
-                    binding.mainImageView.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
-                    binding.mainImageView.setElevation(0);
+                if (binding.mainRecyclerView.computeVerticalScrollOffset() < likeButtonMaxOffset) {
                     binding.likeFabToggle.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
                 } else {
-                    binding.mainImageView.setTranslationY(-maxOffset);
+                    binding.likeFabToggle.setTranslationY(-likeButtonMaxOffset);
+                }
+
+                if (binding.mainRecyclerView.computeVerticalScrollOffset() < mainImageMaxOffset) {
+                    binding.mainImageView.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
+                    binding.mainImageView.setElevation(0);
+                } else {
+                    binding.mainImageView.setTranslationY(-mainImageMaxOffset);
+                    Log.v("pplog", "setElevation");
                     binding.mainImageView.setElevation(16);
-                    binding.likeFabToggle.setTranslationY(-maxOffset);
                 }
             }
         });
@@ -339,6 +306,8 @@ public class MomentDetailActivity extends AppCompatActivity {
                             }
                         }
                 );
+
+        mainImageMaxOffset = PPHelper.calculateHeadMaxOffset(this);
 
         //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
         //这里不用延时的话会导致momentDetailHeadBinding null错误
@@ -550,6 +519,8 @@ public class MomentDetailActivity extends AppCompatActivity {
         final int titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
         final int headPicHeight = calculateHeadHeight(this);
         final int floatingButtonHalfHeight = binding.likeFabToggle.getHeight() / 2;
+
+        likeButtonMaxOffset = PPHelper.calculateHeadMaxOffset(MomentDetailActivity.this) + titleHeight;
 
         Log.v("pplog250", "" + titleHeight + "," + headPicHeight + "," + floatingButtonHalfHeight);
 

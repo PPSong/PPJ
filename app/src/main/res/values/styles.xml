@@ -104,4 +104,14 @@
         <item name="initialBadgeColor">@color/gif_badge_dark_image</item>
     </style>
 
+    <style name="TextAppearance.DribbbleShotTitle" parent="@android:style/TextAppearance.Material.Headline">
+        <!--<item name="font">roboto-mono-regular</item>-->
+        <item name="android:textColor">@color/text_primary_dark</item>
+    </style>
+
+    <style name="Widget.Plaid.DribbbleShotTitle">
+        <item name="android:textAppearance">@style/TextAppearance.DribbbleShotTitle</item>
+        <!--<item name="lineHeightHint">32sp</item>-->
+    </style>
+
 </resources>

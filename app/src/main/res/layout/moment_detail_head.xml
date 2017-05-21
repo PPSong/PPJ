@@ -30,12 +30,19 @@
             android:id="@+id/content_text_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@{data.content + data.id}" />
+            android:text="@{data.content + data.id}"
+            android:background="@color/light_grey"
+            android:paddingTop="@dimen/common"
+            android:paddingBottom="@dimen/common"
+            android:paddingStart="@dimen/common"
+            android:paddingRight="88dp"
+            style="@style/Widget.Plaid.DribbbleShotTitle" />
 
         <LinearLayout
             android:id="@+id/related_users_linear_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="32dp"
             android:orientation="horizontal"
             android:visibility="gone">
 

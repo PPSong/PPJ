@@ -240,7 +240,7 @@ public class PPApplication extends Application {
                 }
             }
 
-//            Log.i("BaiduLocationApiDem", sb.toString());
+            Log.i("BaiduLocationApiDem", sb.toString());
         }
 
         @Override

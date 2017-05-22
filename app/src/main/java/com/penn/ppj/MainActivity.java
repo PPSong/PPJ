@@ -1,10 +1,15 @@
 package com.penn.ppj;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -82,6 +87,8 @@ public class MainActivity extends AppCompatActivity
     private static final int CREATE_MOMENT = 1001;
 
     private ActivityMainBinding binding;
+
+    private static final int PP_ACCESS_COARSE_LOCATION = 1000;
 
     private Menu menu;
 
@@ -171,6 +178,7 @@ public class MainActivity extends AppCompatActivity
 
         ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, binding.mainDrawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         mDrawerToggle.setDrawerIndicatorEnabled(false);
+        requestPermission(this);
     }
 
 //    @Override
@@ -359,6 +367,60 @@ public class MainActivity extends AppCompatActivity
                             }
                         }
                 );
+    }
+
+    private void requestPermission(Activity activity) {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(activity,
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(activity,
+                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(activity,
+                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                        PP_ACCESS_COARSE_LOCATION);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PP_ACCESS_COARSE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+                    PPHelper.error("无此权限程序不能正常运行!");
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
     private void createMoment() {

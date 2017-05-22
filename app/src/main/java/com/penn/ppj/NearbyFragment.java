@@ -125,9 +125,26 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     }
 
     private void setup() {
-        gridLayoutManager = new GridLayoutManager(getContext(), PPHelper.calculateNoOfColumns(getContext()));
+        final int spanNum = PPHelper.calculateNoOfColumns(getContext());
+        gridLayoutManager = new GridLayoutManager(getContext(), spanNum);
+
         ppAdapter = new PPAdapter(data);
         ppLoadController = new PPLoadController(binding.mainSwipeRefreshLayout, binding.mainRecyclerView, ppAdapter, gridLayoutManager, this);
+
+        gridLayoutManager.setSpanSizeLookup(
+                new GridLayoutManager.SpanSizeLookup() {
+                    @Override
+                    public int getSpanSize(int position) {
+                        if (ppAdapter.getItemViewType(position) == PPLoadDataAdapter.LOAD_MORE_SPIN
+                                || ppAdapter.getItemViewType(position) == PPLoadDataAdapter.NO_MORE) {
+                            return spanNum;
+                        } else {
+                            return 1;
+                        }
+
+                    }
+                }
+        );
     }
 
     private final OrderedRealmCollectionChangeListener<RealmResults<NearbyMoment>> changeListener = new OrderedRealmCollectionChangeListener<RealmResults<NearbyMoment>>() {
@@ -305,20 +322,21 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         @Override
         public void ppOnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (!TextUtils.isEmpty(data.get(position).getPic().getKey())) {
-                Picasso.with(getContext())
-                        .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
-                        //.placeholder(R.drawable.ab_gradient_dark)
-                        .into(((PPViewHolder) holder).binding.mainImageView);
-
-                ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
-            }
+                ((PPViewHolder) holder).binding.setData(data.get(position));
+//                Picasso.with(getContext())
+//                        .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
+//                        //.placeholder(R.drawable.ab_gradient_dark)
+//                        .into(((PPViewHolder) holder).binding.mainImageView);
+//
+//                ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
+//            }
 
 //            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
 //                Picasso.with(getContext())
 //                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
 //                        //.placeholder(R.drawable.ab_gradient_dark)
 //                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
-//            }
+            }
         }
 
         @Override

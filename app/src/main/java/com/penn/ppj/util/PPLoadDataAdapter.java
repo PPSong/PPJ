@@ -21,8 +21,8 @@ import static android.os.Looper.getMainLooper;
 public abstract class PPLoadDataAdapter<T, S>
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final int LOAD_MORE_SPIN = -1;
-    private static final int NO_MORE = -2;
+    public static final int LOAD_MORE_SPIN = -1;
+    public static final int NO_MORE = -2;
     private static final long LOAD_MORE_SPIN_ID = Long.MAX_VALUE;
     private static final long NO_MORE_ID = Long.MAX_VALUE - 1;
 

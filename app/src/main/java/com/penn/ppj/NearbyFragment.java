@@ -66,7 +66,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     private GridLayoutManager gridLayoutManager;
     private PPLoadController ppLoadController;
 
-    private long earliestCreateTime = 0;
+    private long earliestCreateTime;
     private String geoStr;
 
     private final View.OnClickListener momentOnClickListener = new View.OnClickListener() {
@@ -110,6 +110,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         data.addChangeListener(changeListener);
 
         binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+        binding.mainRecyclerView.setHasFixedSize(true);
 
         geoStr = PPHelper.getLatestGeoString();
 
@@ -151,26 +152,27 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         @Override
         public void onChange(RealmResults<NearbyMoment> collection, OrderedCollectionChangeSet changeSet) {
             // `null`  means the async query returns the first time.
-            if (changeSet == null) {
-                ppAdapter.notifyDataSetChanged();
-                return;
-            }
-            // For deletions, the adapter has to be notified in reverse order.
-            OrderedCollectionChangeSet.Range[] deletions = changeSet.getDeletionRanges();
-            for (int i = deletions.length - 1; i >= 0; i--) {
-                OrderedCollectionChangeSet.Range range = deletions[i];
-                ppAdapter.notifyItemRangeRemoved(range.startIndex, range.length);
-            }
-
-            OrderedCollectionChangeSet.Range[] insertions = changeSet.getInsertionRanges();
-            for (OrderedCollectionChangeSet.Range range : insertions) {
-                ppAdapter.notifyItemRangeInserted(range.startIndex, range.length);
-            }
-
-            OrderedCollectionChangeSet.Range[] modifications = changeSet.getChangeRanges();
-            for (OrderedCollectionChangeSet.Range range : modifications) {
-                ppAdapter.notifyItemRangeChanged(range.startIndex, range.length);
-            }
+//            if (changeSet == null) {
+//                ppAdapter.notifyDataSetChanged();
+//                return;
+//            }
+//            // For deletions, the adapter has to be notified in reverse order.
+//            OrderedCollectionChangeSet.Range[] deletions = changeSet.getDeletionRanges();
+//            for (int i = deletions.length - 1; i >= 0; i--) {
+//                OrderedCollectionChangeSet.Range range = deletions[i];
+//                ppAdapter.notifyItemRangeRemoved(range.startIndex, range.length);
+//            }
+//
+//            OrderedCollectionChangeSet.Range[] insertions = changeSet.getInsertionRanges();
+//            for (OrderedCollectionChangeSet.Range range : insertions) {
+//                ppAdapter.notifyItemRangeInserted(range.startIndex, range.length);
+//            }
+//
+//            OrderedCollectionChangeSet.Range[] modifications = changeSet.getChangeRanges();
+//            for (OrderedCollectionChangeSet.Range range : modifications) {
+//                ppAdapter.notifyItemRangeChanged(range.startIndex, range.length);
+//            }
+            ppAdapter.notifyDataSetChanged();
         }
     };
 
@@ -203,14 +205,18 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
                 nearbyMoment.setPic(pic);
 
                 realm.insertOrUpdate(nearbyMoment);
-                earliestCreateTime = createTime;
+                if (earliestCreateTime > createTime) {
+                    earliestCreateTime = createTime;
+                }
             }
 
             realm.commitTransaction();
 
-            if (size < PPHelper.TIMELINE_MINE_PAGE_SIZE) {
+            if (size < PPHelper.NEARBY_MOMENT_PAGE_SIZE) {
+                Log.v("pplog500", "nomore:" + true);
                 return true;
             } else {
+                Log.v("pplog500", "nomore:" + false);
                 return false;
             }
         }
@@ -219,11 +225,14 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     @Override
     public void refreshData() {
         geoStr = PPHelper.getLatestGeoString();
-        earliestCreateTime = 0;
+        earliestCreateTime = Long.MAX_VALUE;
+
+        Log.v("pplog310", geoStr + "," + earliestCreateTime);
+
         PPJSONObject jBody = new PPJSONObject();
         jBody
                 .put("geo", geoStr)
-                .put("before", earliestCreateTime);
+                .put("beforeTime", "" + earliestCreateTime);
 
         final Observable<String> apiResult = PPRetrofit.getInstance().api("moment.search", jBody.getJSONObject());
 
@@ -256,10 +265,11 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
 
     @Override
     public void loadMoreData() {
+        Log.v("pplog370", "loadMoreData:" + geoStr + ",earliestCreateTime:" + earliestCreateTime);
         PPJSONObject jBody = new PPJSONObject();
         jBody
                 .put("geo", geoStr)
-                .put("before", earliestCreateTime);
+                .put("beforeTime", "" + earliestCreateTime);
 
         final Observable<String> apiResult = PPRetrofit.getInstance().api("moment.search", jBody.getJSONObject());
 
@@ -284,7 +294,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
                             @Override
                             public void accept(@NonNull Throwable throwable) throws Exception {
                                 PPHelper.error(throwable.toString());
-                                ppLoadController.endRefreshSpinner();
+                                ppLoadController.removeLoadMoreSpinner();
                             }
                         }
                 );
@@ -321,22 +331,25 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
 
         @Override
         public void ppOnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (!TextUtils.isEmpty(data.get(position).getPic().getKey())) {
-                ((PPViewHolder) holder).binding.setData(data.get(position));
-//                Picasso.with(getContext())
-//                        .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
-//                        //.placeholder(R.drawable.ab_gradient_dark)
-//                        .into(((PPViewHolder) holder).binding.mainImageView);
+            ((PPViewHolder) holder).binding.mainImageView.setImageResource(android.R.color.transparent);
+            ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
+            ((PPViewHolder) holder).binding.setData(data.get(position));
+//            if (!TextUtils.isEmpty(data.get(position).getPic().getKey())) {
+//                ((PPViewHolder) holder).binding.setData(data.get(position));
+////                Picasso.with(getContext())
+////                        .load(PPHelper.get800ImageUrl(data.get(position).getPic().getKey()))
+////                        //.placeholder(R.drawable.ab_gradient_dark)
+////                        .into(((PPViewHolder) holder).binding.mainImageView);
+////
+////                ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
+////            }
 //
-//                ((PPViewHolder) holder).binding.mainImageView.setBackgroundColor(PPHelper.getMomentOverviewBackgroundColor(position));
+////            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
+////                Picasso.with(getContext())
+////                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
+////                        //.placeholder(R.drawable.ab_gradient_dark)
+////                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
 //            }
-
-//            if (!TextUtils.isEmpty(data.get(position).getAvatar())) {
-//                Picasso.with(getContext())
-//                        .load(PPHelper.get80ImageUrl(data.get(position).getAvatar()))
-//                        //.placeholder(R.drawable.ab_gradient_dark)
-//                        .into(((PPViewHolder) holder).binding.avatarCircleImageView);
-            }
         }
 
         @Override

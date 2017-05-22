@@ -56,13 +56,13 @@ public class PPApplication extends Application {
 
     @BindingAdapter({"bind:imageUrl"})
     public static void setImageViewResource(final ImageView imageView, String pic) {
-        Log.v("pplog", "imageUrl");
+//        Log.v("pplog", "imageUrl");
         PPHelper.setImageViewResource(imageView, pic, 800);
     }
 
     @BindingAdapter({"bind:imageData"})
     public static void setImageViewDataResource(final ImageView imageView, byte[] pic) {
-        Log.v("pplog", "imageData");
+//        Log.v("pplog", "imageData");
         if (pic == null) {
             imageView.setImageResource(android.R.color.transparent);
             return;
@@ -73,14 +73,14 @@ public class PPApplication extends Application {
 
     @BindingAdapter({"bind:avatarImageUrl"})
     public static void setAvatarImageViewResource(final ImageView imageView, String pic) {
-        Log.v("pplog", "avatarImageUrl");
+//        Log.v("pplog", "avatarImageUrl");
         PPHelper.setImageViewResource(imageView, pic, 80);
     }
 
     @BindingAdapter({"bind:imagePicUrl"})
     public static void setImagePicViewResource(final ImageView imageView, Pic pic) {
         if (pic.getStatus() == PicStatus.NET) {
-            Log.v("pplog", "imagePicUrl");
+//            Log.v("pplog", "imagePicUrl");
             PPHelper.setImageViewResource(imageView, pic.getKey(), 180);
         } else {
             byte[] data = pic.getThumbLocalData();
@@ -91,16 +91,16 @@ public class PPApplication extends Application {
 
     @BindingAdapter({"bind:pp_reference_time"})
     public static void setTimeAgo(final RelativeTimeTextView relativeTimeTextView, long time) {
-        Log.v("pplog", "setTimeAgo");
+//        Log.v("pplog", "setTimeAgo");
         if (time > 0) {
             relativeTimeTextView.setReferenceTime(time);
         }
-        Log.v("pplog", "setTimeAgo 0");
+//        Log.v("pplog", "setTimeAgo 0");
     }
 
     @BindingAdapter({"bind:mapImageUrl"})
     public static void setMapImage(final ImageView imageView, String geo) {
-        Log.v("pplog", "mapImageUrl");
+//        Log.v("pplog", "mapImageUrl");
         PPHelper.setMapImage(imageView, geo);
     }
 
@@ -164,7 +164,7 @@ public class PPApplication extends Application {
             sb.append(location.getLongitude());    //获取经度信息
 
             if (location.getLocType() != BDLocation.TypeOffLineLocation) {
-                PPHelper.setPrefStringValue(PPHelper.LATEST_GEO, location.getLongitude() + "," + location.getLatitude());
+                PPHelper.setPrefStringValue(PPHelper.LATEST_GEO, String.format("%.9f", location.getLongitude()) + "," + String.format("%.9f", location.getLatitude()));
                 PPHelper.setPrefStringValue(PPHelper.LATEST_ADDRESS, location.getAddrStr());
             }
 
@@ -240,7 +240,7 @@ public class PPApplication extends Application {
                 }
             }
 
-            Log.i("BaiduLocationApiDem", sb.toString());
+//            Log.i("BaiduLocationApiDem", sb.toString());
         }
 
         @Override

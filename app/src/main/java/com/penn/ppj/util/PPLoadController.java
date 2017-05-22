@@ -3,6 +3,7 @@ package com.penn.ppj.util;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 
@@ -21,7 +22,7 @@ import io.reactivex.subjects.BehaviorSubject;
 public class PPLoadController extends RecyclerView.OnScrollListener implements SwipeRefreshLayout.OnRefreshListener {
     private boolean dataLoading = false;
     //default value 5
-    private int loadMoreDistance = 5;
+    private int loadMoreDistance = 0;
 
     private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
 
@@ -110,7 +111,7 @@ public class PPLoadController extends RecyclerView.OnScrollListener implements S
         final int totalItemCount = linearLayoutManager.getItemCount();
         final int firstVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
 
-        if ((totalItemCount - visibleItemCount) <= (firstVisibleItem + loadMoreDistance)) {
+        if (!(ppLoadDataAdapter.noMore) && (totalItemCount - visibleItemCount) <= (firstVisibleItem + loadMoreDistance)) {
             loadMore();
         }
     }

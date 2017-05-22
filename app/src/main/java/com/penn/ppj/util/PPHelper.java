@@ -81,6 +81,7 @@ public class PPHelper {
     public static final int DOWN = 2;
 
     public static final int TIMELINE_MINE_PAGE_SIZE = 20;
+    public static final int NEARBY_MOMENT_PAGE_SIZE = 10;
     public static final String APP_NAME = "PPJ";
     public static final String AUTH_BODY_KEY = "AUTH_BODY_KEY";
     public static final String LATEST_GEO = "LATEST_GEO";
@@ -242,7 +243,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = false;
+        boolean clearData = true;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -763,7 +764,7 @@ public class PPHelper {
         }
 
         if (size == 800) {
-            Log.v("pplog", "800");
+//            Log.v("pplog", "800");
             String picUrl = get800ImageUrl(pic);
             Picasso.with(getContext())
                     .load(picUrl)
@@ -789,7 +790,7 @@ public class PPHelper {
 //                        }
 //                    });
         } else if (size == 180) {
-            Log.v("pplog", "180");
+//            Log.v("pplog", "180");
             String picUrl = get180ImageUrl(pic);
             Picasso.with(getContext())
                     .load(picUrl)
@@ -797,7 +798,7 @@ public class PPHelper {
                     .into(imageView);
         } else {
             //default
-            Log.v("pplog", "80");
+//            Log.v("pplog", "80");
             String picUrl = get80ImageUrl(pic);
             Picasso.with(getContext())
                     .load(picUrl)

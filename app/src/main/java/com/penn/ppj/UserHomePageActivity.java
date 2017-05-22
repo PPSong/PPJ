@@ -24,6 +24,7 @@ import com.penn.ppj.databinding.MomentOverviewCellBinding;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
+import com.penn.ppj.model.realm.RelatedUser;
 import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
@@ -259,6 +260,8 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         ppAdapter = new PPAdapter(moments);
         binding.mainRecyclerView.setAdapter(ppAdapter);
+
+        setupButtonsText();
     }
 
     @Override
@@ -298,6 +301,18 @@ public class UserHomePageActivity extends AppCompatActivity {
                             }
                         }
                 );
+    }
+
+    private void setupButtonsText() {
+        long momentsNum = realm.where(Moment.class).equalTo("userId", PPHelper.currentUserId).count();
+        long fansNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FAN.toString()).count();
+        long followsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).count();
+        long friendsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FRIEND.toString()).count();
+
+        binding.momentButton.setText("" + momentsNum);
+        binding.fansButton.setText("" + fansNum);
+        binding.followsButton.setText("" + followsNum);
+        binding.friendsButton.setText("" + friendsNum);
     }
 
     private void restoreLocalUserHomePage() {

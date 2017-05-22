@@ -1,6 +1,9 @@
 package com.penn.ppj.model.realm;
 
+import android.view.View;
+
 import com.penn.ppj.ppEnum.RelatedUserType;
+import com.penn.ppj.util.PPHelper;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -57,5 +60,22 @@ public class UserHomePage extends RealmObject {
 
     public void setLastVisitTime(long lastVisitTime) {
         this.lastVisitTime = lastVisitTime;
+    }
+
+    //-----helper-----
+    public int getFollowButtonVisibility() {
+        if (userId.equalsIgnoreCase(PPHelper.currentUserId)) {
+            return View.GONE;
+        } else {
+            return View.VISIBLE;
+        }
+    }
+
+    public int getRelatedUsersButtonVisibility() {
+        if (userId.equalsIgnoreCase(PPHelper.currentUserId)) {
+            return View.VISIBLE;
+        } else {
+            return View.GONE;
+        }
     }
 }

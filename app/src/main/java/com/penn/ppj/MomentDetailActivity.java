@@ -24,9 +24,11 @@ import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.CommentCellBinding;
 import com.penn.ppj.databinding.MomentDetailHeadBinding;
 import com.penn.ppj.model.realm.Comment;
+import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.CommentStatus;
+import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
@@ -54,6 +56,7 @@ import io.realm.Sort;
 
 import static android.R.attr.scrollY;
 import static com.penn.ppj.R.id.imageView;
+import static com.penn.ppj.R.string.moment;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
 import static com.penn.ppj.util.PPHelper.calculateHeadMinHeight;
 import static com.penn.ppj.util.PPHelper.hideKeyboard;
@@ -91,7 +94,15 @@ public class MomentDetailActivity extends AppCompatActivity {
     private final View.OnClickListener commentOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+            //由于第一个cell被head占了
+            Comment comment = comments.get(position - 1);
 
+            if (comment.getStatus().equals(CommentStatus.NET)) {
+                Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);
+                intent.putExtra("userId", comment.getUserId());
+                startActivity(intent);
+            }
         }
     };
 
@@ -149,7 +160,7 @@ public class MomentDetailActivity extends AppCompatActivity {
 
                 momentDetailHeadBinding = tmpMomentDetailHeadBinding;
 
-                momentDetailHeadBinding.getRoot().setOnClickListener(new View.OnClickListener() {
+                momentDetailHeadBinding.avatarCircleImageView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);

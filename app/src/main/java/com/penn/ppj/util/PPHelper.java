@@ -94,6 +94,12 @@ public class PPHelper {
 
     public static String currentUserNickname;
     public static String currentUserAvatar;
+
+    public static int currentUserFans;
+    public static int currentUserFollows;
+    public static int currentUserFriends;
+    public static int currentUserMoments;
+
     public static String socketUrl;
     public static String baiduAk;
 
@@ -236,7 +242,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }

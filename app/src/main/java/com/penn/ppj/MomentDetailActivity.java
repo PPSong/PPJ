@@ -9,9 +9,14 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.gson.JsonArray;
 import com.jakewharton.rxbinding2.view.RxView;
@@ -20,6 +25,7 @@ import com.penn.ppj.databinding.CommentCellBinding;
 import com.penn.ppj.databinding.MomentDetailHeadBinding;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.MomentDetail;
+import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
@@ -46,7 +52,10 @@ import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static android.R.attr.scrollY;
+import static com.penn.ppj.R.id.imageView;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
+import static com.penn.ppj.util.PPHelper.calculateHeadMinHeight;
 import static com.penn.ppj.util.PPHelper.hideKeyboard;
 import static com.penn.ppj.util.PPHelper.ppFromString;
 import static io.reactivex.Observable.zip;
@@ -72,9 +81,12 @@ public class MomentDetailActivity extends AppCompatActivity {
 
     private MomentDetailHeadBinding momentDetailHeadBinding;
 
-    private int likeButtonMaxOffset;
+    private int titleHeight;
+    private int headPicHeight;
+    private int headPicMinHeight;
+    private int floatingButtonHalfHeight;
 
-    private int mainImageMaxOffset;
+    private boolean likeButtonSetuped = false;
 
     private final View.OnClickListener commentOnClickListener = new View.OnClickListener() {
         @Override
@@ -136,6 +148,16 @@ public class MomentDetailActivity extends AppCompatActivity {
                 final MomentDetailHeadBinding tmpMomentDetailHeadBinding = MomentDetailHeadBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
 
                 momentDetailHeadBinding = tmpMomentDetailHeadBinding;
+
+                momentDetailHeadBinding.getRoot().setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);
+                        intent.putExtra("userId", momentDetail.getUserId());
+                        startActivity(intent);
+                    }
+                });
+
                 return new PPHead(tmpMomentDetailHeadBinding);
             } else if (viewType == COMMENT) {
                 CommentCellBinding commentCellBinding = CommentCellBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
@@ -168,6 +190,20 @@ public class MomentDetailActivity extends AppCompatActivity {
         public int getItemCount() {
             return data.size() + 1;
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                View view = getCurrentFocus();
+                PPHelper.hideKeyboard(ev, view, this);//调用方法判断是否需要隐藏键盘
+                break;
+
+            default:
+                break;
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     @Override
@@ -221,28 +257,42 @@ public class MomentDetailActivity extends AppCompatActivity {
         comments.addChangeListener(commentsChangeListener);
 
         ppAdapter = new PPAdapter(comments);
+
         linearLayoutManager = new LinearLayoutManager(this);
 
         binding.mainRecyclerView.setLayoutManager(linearLayoutManager);
         binding.mainRecyclerView.setAdapter(ppAdapter);
 
+        binding.mainRecyclerView.setHasFixedSize(true);
+
+        final int headMinHeadHeight = PPHelper.calculateHeadMinHeight(this);
+
         binding.mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (binding.mainRecyclerView.computeVerticalScrollOffset() < likeButtonMaxOffset) {
-                    binding.likeFabToggle.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
-                } else {
-                    binding.likeFabToggle.setTranslationY(-likeButtonMaxOffset);
+
+                if (!likeButtonSetuped) {
+                    return;
                 }
 
-                if (binding.mainRecyclerView.computeVerticalScrollOffset() < mainImageMaxOffset) {
-                    binding.mainImageView.setTranslationY(-binding.mainRecyclerView.computeVerticalScrollOffset());
-                    binding.mainImageView.setElevation(0);
+                final int scrollY = momentDetailHeadBinding.getRoot().getTop();
+
+                int fabBan = headPicHeight - headMinHeadHeight + titleHeight;
+                int imageBan = headPicHeight - headMinHeadHeight;
+
+                if (Math.abs(scrollY) < fabBan) {
+                    binding.likeFabToggle.setTranslationY(scrollY);
                 } else {
-                    binding.mainImageView.setTranslationY(-mainImageMaxOffset);
-                    Log.v("pplog", "setElevation");
+                    binding.likeFabToggle.setTranslationY(-fabBan);
+                }
+
+                if (Math.abs(scrollY) < imageBan) {
+                    binding.mainImageView.setElevation(0);
+                    binding.mainImageView.setTranslationY(scrollY);
+                } else {
                     binding.mainImageView.setElevation(16);
+                    binding.mainImageView.setTranslationY(-imageBan);
                 }
             }
         });
@@ -250,15 +300,15 @@ public class MomentDetailActivity extends AppCompatActivity {
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 //        setSupportActionBar(toolbar);
 
-        binding.commentTextInputEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    binding.commentTextInputEditText.clearFocus();
-                    hideKeyboard(MomentDetailActivity.this);
-                }
-            }
-        });
+//        binding.commentTextInputEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+//            @Override
+//            public void onFocusChange(View v, boolean hasFocus) {
+//                if (!hasFocus) {
+//                    binding.commentTextInputEditText.clearFocus();
+//                    hideKeyboard(MomentDetailActivity.this);
+//                }
+//            }
+//        });
 
         //like按钮监控
         Observable<Object> likeButtonObservable = RxView.clicks(binding.likeFabToggle)
@@ -266,16 +316,20 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         likeButtonObservable
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                boolean liked = binding.likeFabToggle.isChecked();
-                                binding.likeFabToggle.setChecked(!liked);
-                                likeOrUnlikeMoment(!liked);
-                            }
-                        }
-                );
+                .
+
+                        observeOn(AndroidSchedulers.mainThread())
+                .
+
+                        subscribe(
+                                new Consumer<Object>() {
+                                    public void accept(Object o) {
+                                        boolean liked = binding.likeFabToggle.isChecked();
+                                        binding.likeFabToggle.setChecked(!liked);
+                                        likeOrUnlikeMoment(!liked);
+                                    }
+                                }
+                        );
 
         //send comment按钮监控
         Observable<Object> commentButtonObservable = RxView.clicks(binding.sendCommentImageButton)
@@ -283,33 +337,57 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         commentButtonObservable
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                sendComment();
-                            }
-                        }
-                );
+                .
 
-        mainImageMaxOffset = PPHelper.calculateHeadMaxOffset(this);
+                        observeOn(AndroidSchedulers.mainThread())
+                .
 
-        //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
-        //这里不用延时的话会导致momentDetailHeadBinding null错误
-        binding.mainRecyclerView.post(new Runnable() {
+                        subscribe(
+                                new Consumer<Object>() {
+                                    public void accept(Object o) {
+                                        sendComment();
+                                    }
+                                }
+                        );
+
+        binding.commentTextInputEditText.setOnEditorActionListener(new EditText.OnEditorActionListener()
+
+        {
             @Override
-            public void run() {
-                getMomentDetail();
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                Log.v("pplog333", "onEditorAction");
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    sendComment();
+                    return true;
+                }
+                return false;
             }
         });
 
+        //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
+        //这里不用延时的话会导致momentDetailHeadBinding null错误
+        binding.mainRecyclerView.post(new
+
+                                              Runnable() {
+                                                  @Override
+                                                  public void run() {
+                                                      getMomentDetail();
+                                                  }
+                                              });
+
         //容错 currentUserAvatar为空
-        if (TextUtils.isEmpty(PPHelper.currentUserAvatar)) {
+        if (TextUtils.isEmpty(PPHelper.currentUserAvatar))
+
+        {
             Log.v("pplog", "currentUserAvatar不应该为空");
             return;
         }
 
-        Picasso.with(this).load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).into(binding.commentAvatarCircleImageView);
+        Picasso.with(this).
+
+                load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).
+
+                into(binding.commentAvatarCircleImageView);
     }
 
     private void sendComment() {
@@ -501,13 +579,12 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void setupLikeButton() {
-        final int titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
-        final int headPicHeight = calculateHeadHeight(this);
-        final int floatingButtonHalfHeight = binding.likeFabToggle.getHeight() / 2;
+        titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
+        headPicHeight = calculateHeadHeight(this);
+        headPicMinHeight = PPHelper.calculateHeadMinHeight(this);
+        floatingButtonHalfHeight = binding.likeFabToggle.getHeight() / 2;
 
-        likeButtonMaxOffset = PPHelper.calculateHeadMaxOffset(MomentDetailActivity.this) + titleHeight;
-
-        Log.v("pplog250", "" + titleHeight + "," + headPicHeight + "," + floatingButtonHalfHeight);
+        likeButtonSetuped = true;
 
         PPHelper.likeButtonAppear(this, binding.likeFabToggle, titleHeight + headPicHeight - floatingButtonHalfHeight);
     }
@@ -644,10 +721,5 @@ public class MomentDetailActivity extends AppCompatActivity {
 
             realm.commitTransaction();
         }
-    }
-
-    private void showRelatedUsers(RelatedUserType relatedUserType) {
-        RelatedUsersBottomSheetFragment relatedUsersBottomSheetFragment = RelatedUsersBottomSheetFragment.newInstance(relatedUserType);
-        relatedUsersBottomSheetFragment.show(getSupportFragmentManager(), relatedUsersBottomSheetFragment.getTag());
     }
 }

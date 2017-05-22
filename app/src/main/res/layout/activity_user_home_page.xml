@@ -51,7 +51,17 @@
                 android:layout_height="wrap_content">
 
                 <Button
-                    android:id="@+id/likes_button"
+                    android:id="@+id/moment_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/avd_shots"
+                    tools:text="33 views" />
+
+
+                <Button
+                    android:id="@+id/fans_button"
                     style="@style/InlineActionButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -60,7 +70,7 @@
                     tools:text="33 likes" />
 
                 <Button
-                    android:id="@+id/views_button"
+                    android:id="@+id/follows_button"
                     style="@style/InlineActionButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -69,12 +79,12 @@
                     tools:text="33 views" />
 
                 <Button
-                    android:id="@+id/share_button"
+                    android:id="@+id/friends_button"
                     style="@style/InlineActionButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:drawableTop="@drawable/avd_share"
+                    android:drawableTop="@drawable/avd_followers"
                     tools:text="33 views" />
 
             </LinearLayout>

@@ -9,17 +9,20 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -414,6 +417,14 @@ public class PPHelper {
         int height_4_3 = (int) dpWidth * 3 / 4;
 
         return height_4_3;
+    }
+
+    public static int calculateHeadMinHeight(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels;
+        int height_16_9 = (int) dpWidth * 9 / 16;
+
+        return height_16_9;
     }
 
     public static int calculateMomentOverHeight() {
@@ -979,14 +990,6 @@ public class PPHelper {
         }
     }
 
-    public static void hideKeyboard(Activity activity) {
-        View view = activity.getCurrentFocus();
-        if (view != null) {
-            InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-    }
-
     public static int getMomentOverviewBackgroundColor(int position) {
         TypedArray ta = getContext().getResources().obtainTypedArray(R.array.loading_placeholders_dark);
         int[] colors = new int[ta.length()];
@@ -1005,5 +1008,35 @@ public class PPHelper {
 
     public static void hideProgressDialog() {
         progressDialog.cancel();
+    }
+
+    public static void hideKeyboard(MotionEvent event, View view,
+                                    Activity activity) {
+        try {
+            if (view != null && view instanceof EditText) {
+                int[] location = { 0, 0 };
+                view.getLocationInWindow(location);
+                int left = location[0], top = location[1], right = left
+                        + view.getWidth(), bootom = top + view.getHeight();
+                // 判断焦点位置坐标是否在空间内，如果位置在控件外，则隐藏键盘
+                if (event.getRawX() < left || event.getRawX() > right
+                        || event.getY() < top || event.getRawY() > bootom) {
+                    // 隐藏键盘
+                    hideKeyboard(activity);
+                    //取消焦点
+                    view.clearFocus();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void hideKeyboard(Activity activity) {
+        View view = activity.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        }
     }
 }

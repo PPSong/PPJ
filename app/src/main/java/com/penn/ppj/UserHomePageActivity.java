@@ -2,6 +2,7 @@ package com.penn.ppj;
 
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.graphics.drawable.AnimatedVectorDrawable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -137,6 +138,69 @@ public class UserHomePageActivity extends AppCompatActivity {
                         }
                 );
 
+        //moment按钮监控
+        Observable<Object> momentButtonObservable = RxView.clicks(binding.momentButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        momentButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                ((AnimatedVectorDrawable) binding.momentButton.getCompoundDrawables()[1]).start();
+                            }
+                        }
+                );
+
+        //fans按钮监控
+        Observable<Object> fansButtonObservable = RxView.clicks(binding.fansButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        fansButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                ((AnimatedVectorDrawable) binding.fansButton.getCompoundDrawables()[1]).start();
+                                showRelatedUsers(RelatedUserType.FAN);
+                            }
+                        }
+                );
+
+        //follows按钮监控
+        Observable<Object> followsButtonObservable = RxView.clicks(binding.followsButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        followsButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                ((AnimatedVectorDrawable) binding.followsButton.getCompoundDrawables()[1]).start();
+                                showRelatedUsers(RelatedUserType.FOLLOW);
+                            }
+                        }
+                );
+
+        //friends按钮监控
+        Observable<Object> friendsButtonObservable = RxView.clicks(binding.friendsButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        friendsButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                ((AnimatedVectorDrawable) binding.friendsButton.getCompoundDrawables()[1]).start();
+                                showRelatedUsers(RelatedUserType.FRIEND);
+                            }
+                        }
+                );
+
         realm = Realm.getDefaultInstance();
 
         userId = getIntent().getStringExtra("userId");
@@ -195,8 +259,6 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         ppAdapter = new PPAdapter(moments);
         binding.mainRecyclerView.setAdapter(ppAdapter);
-
-        //showUserMoments(userId);
     }
 
     @Override
@@ -342,5 +404,10 @@ public class UserHomePageActivity extends AppCompatActivity {
     private void showUserMoments(String userId) {
         FriendMomentBottomSheetFragment friendMomentBottomSheetFragment = FriendMomentBottomSheetFragment.newInstance(userId);
         friendMomentBottomSheetFragment.show(getSupportFragmentManager(), friendMomentBottomSheetFragment.getTag());
+    }
+
+    private void showRelatedUsers(RelatedUserType relatedUserType) {
+        RelatedUsersBottomSheetFragment relatedUsersBottomSheetFragment = RelatedUsersBottomSheetFragment.newInstance(relatedUserType);
+        relatedUsersBottomSheetFragment.show(getSupportFragmentManager(), relatedUsersBottomSheetFragment.getTag());
     }
 }

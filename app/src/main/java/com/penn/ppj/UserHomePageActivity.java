@@ -48,6 +48,7 @@ import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static com.baidu.location.h.j.U;
 import static com.penn.ppj.PPApplication.getContext;
 import static com.penn.ppj.R.id.liked;
 
@@ -135,54 +136,6 @@ public class UserHomePageActivity extends AppCompatActivity {
                                 boolean followed = binding.followToggleButton.isChecked();
                                 Log.v("pplog", "follow2:" + followed);
                                 followOrUnfollowMoment(followed);
-                            }
-                        }
-                );
-
-        //fans按钮监控
-        Observable<Object> fansButtonObservable = RxView.clicks(binding.fansButton)
-                .debounce(200, TimeUnit.MILLISECONDS);
-
-        fansButtonObservable
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                ((AnimatedVectorDrawable) binding.fansButton.getCompoundDrawables()[1]).start();
-                                showRelatedUsers(RelatedUserType.FAN);
-                            }
-                        }
-                );
-
-        //follows按钮监控
-        Observable<Object> followsButtonObservable = RxView.clicks(binding.followsButton)
-                .debounce(200, TimeUnit.MILLISECONDS);
-
-        followsButtonObservable
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                ((AnimatedVectorDrawable) binding.followsButton.getCompoundDrawables()[1]).start();
-                                showRelatedUsers(RelatedUserType.FOLLOW);
-                            }
-                        }
-                );
-
-        //friends按钮监控
-        Observable<Object> friendsButtonObservable = RxView.clicks(binding.friendsButton)
-                .debounce(200, TimeUnit.MILLISECONDS);
-
-        friendsButtonObservable
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                ((AnimatedVectorDrawable) binding.friendsButton.getCompoundDrawables()[1]).start();
-                                showRelatedUsers(RelatedUserType.FRIEND);
                             }
                         }
                 );
@@ -292,10 +245,6 @@ public class UserHomePageActivity extends AppCompatActivity {
         long fansNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FAN.toString()).count();
         long followsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).count();
         long friendsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FRIEND.toString()).count();
-
-        binding.fansButton.setText("" + fansNum + getString(R.string.fan));
-        binding.followsButton.setText("" + followsNum + getString(R.string.follow));
-        binding.friendsButton.setText("" + friendsNum + getString(R.string.friend));
     }
 
     private void restoreLocalUserHomePage() {

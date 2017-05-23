@@ -1,15 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.penn.ppj.UserHomePageActivity">
+    tools:context="com.penn.ppj.MyProfileActivity">
 
     <data>
 
         <variable
             name="data"
-            type="com.penn.ppj.model.realm.UserHomePage" />
+            type="com.penn.ppj.model.realm.MyProfile" />
     </data>
 
     <android.support.design.widget.CoordinatorLayout
@@ -35,16 +33,38 @@
                 android:layout_height="wrap_content"
                 android:text="@{data.nickname}" />
 
-            <ToggleButton
-                android:id="@+id/follow_toggle_button"
-                style="@style/Base.Widget.AppCompat.Button.Colored"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="@{data.followed}"
-                android:drawablePadding="@dimen/small"
-                android:drawableStart="@drawable/asl_follow"
-                android:textOff="@string/follow"
-                android:textOn="@string/unfollowing" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/fans_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/avd_likes"
+                    tools:text="33 likes" />
+
+                <Button
+                    android:id="@+id/follows_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/avd_views"
+                    tools:text="33 views" />
+
+                <Button
+                    android:id="@+id/friends_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/avd_followers"
+                    tools:text="33 views" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

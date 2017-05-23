@@ -43,6 +43,7 @@ import com.penn.ppj.model.realm.Message;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
 import com.penn.ppj.model.realm.MomentDetail;
+import com.penn.ppj.model.realm.MyProfile;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.model.realm.RelatedUser;
 import com.penn.ppj.ppEnum.MomentStatus;
@@ -62,6 +63,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -551,6 +553,9 @@ public class PPHelper {
 
     //包含所有网络获得链接后需要更新的事情
     public static void networkConnectNeedToRefresh() {
+        //pptodo 这个有隐患, 因为myProfile是一定要有的, 要不然mainActivity和MyProfileActivity都不能显示
+        refreshMyProfile();
+
         //我的moment
 
         long mostNewMomentCreateTime = 0;
@@ -1063,6 +1068,90 @@ public class PPHelper {
             realm.where(MomentDetail.class).equalTo("id", momentId).findFirst().deleteFromRealm();
             realm.where(Moment.class).equalTo("id", momentId).findFirst().deleteFromRealm();
             realm.where(Comment.class).equalTo("momentId", momentId).findAll().deleteAllFromRealm();
+
+            realm.commitTransaction();
+        }
+    }
+
+    public static void refreshMyProfile() {
+        PPJSONObject jBody1 = new PPJSONObject();
+        JsonArray fields = new JsonArray();
+        fields.add("follows");
+        fields.add("fans");
+        fields.add("friends");
+        jBody1
+                .put("fields", fields.toString());
+
+        final Observable<String> apiResult1 = PPRetrofit.getInstance().api("user.stats", jBody1.getJSONObject());
+
+        PPJSONObject jBody2 = new PPJSONObject();
+        jBody2
+                .put("target", PPHelper.currentUserId);
+
+        final Observable<String> apiResult2 = PPRetrofit.getInstance().api("user.info", jBody2.getJSONObject());
+
+        Observable
+                .zip(
+                        apiResult1, apiResult2, new BiFunction<String, String, String[]>() {
+
+                            @Override
+                            public String[] apply(@NonNull String s, @NonNull String s2) throws Exception {
+                                String[] result = {s, s2};
+
+                                return result;
+                            }
+                        }
+                )
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String[]>() {
+                            @Override
+                            public void accept(@NonNull String[] result) throws Exception {
+                                PPWarn ppWarn = PPHelper.ppWarning(result[0]);
+
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                PPWarn ppWarn2 = PPHelper.ppWarning(result[1]);
+
+                                if (ppWarn2 != null) {
+                                    throw new Exception(ppWarn2.msg);
+                                }
+
+                                processMyProfile(result[0], result[1]);
+                            }
+                        }
+                        ,
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                                Log.v("pplog", throwable.toString());
+                            }
+                        }
+                );
+    }
+
+    public static void processMyProfile(String userStats, String userInfo) {
+        try (Realm realm = Realm.getDefaultInstance()) {
+            MyProfile myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
+
+            myProfile.setUserId(PPHelper.currentUserId);
+
+            myProfile.setFollows(PPHelper.ppFromString(userStats, "data.follows").getAsInt());
+            myProfile.setFans(PPHelper.ppFromString(userStats, "data.fans").getAsInt());
+            myProfile.setFriends(PPHelper.ppFromString(userStats, "data.friends").getAsInt());
+
+            myProfile.setNickname(PPHelper.ppFromString(userInfo, "data.profile.nickname").getAsString());
+            myProfile.setAvatar(PPHelper.ppFromString(userInfo, "data.profile.head").getAsString());
+            myProfile.setLikes(PPHelper.ppFromString(userStats, "data.stats.momentBeLiked").getAsInt());
+
+
+            realm.beginTransaction();
+
+            realm.insertOrUpdate(myProfile);
 
             realm.commitTransaction();
         }

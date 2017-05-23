@@ -2,25 +2,24 @@ package com.penn.ppj.model.realm;
 
 import android.view.View;
 
-import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
-import static android.R.attr.type;
-
 /**
  * Created by penn on 15/05/2017.
  */
 
-public class UserHomePage extends RealmObject {
+public class MyProfile extends RealmObject {
     @PrimaryKey
     private String userId;
     private String nickname;
     private String avatar;
-    private boolean isFollowed;
-    private long lastVisitTime;
+    private int friends;
+    private int follows;
+    private int fans;
+    private int likes;
 
     public String getUserId() {
         return userId;
@@ -46,19 +45,35 @@ public class UserHomePage extends RealmObject {
         this.avatar = avatar;
     }
 
-    public boolean isFollowed() {
-        return isFollowed;
+    public int getFriends() {
+        return friends;
     }
 
-    public void setFollowed(boolean followed) {
-        isFollowed = followed;
+    public void setFriends(int friends) {
+        this.friends = friends;
     }
 
-    public long getLastVisitTime() {
-        return lastVisitTime;
+    public int getFollows() {
+        return follows;
     }
 
-    public void setLastVisitTime(long lastVisitTime) {
-        this.lastVisitTime = lastVisitTime;
+    public void setFollows(int follows) {
+        this.follows = follows;
+    }
+
+    public int getFans() {
+        return fans;
+    }
+
+    public void setFans(int fans) {
+        this.fans = fans;
+    }
+
+    public int getLikes() {
+        return likes;
+    }
+
+    public void setLikes(int likes) {
+        this.likes = likes;
     }
 }

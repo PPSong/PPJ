@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,8 @@ import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
+
+import static android.R.attr.type;
 
 public class NotificationFragment extends Fragment {
 
@@ -114,6 +117,8 @@ public class NotificationFragment extends Fragment {
             }
         });
 
+        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+
         setup();
 
         return view;
@@ -133,7 +138,16 @@ public class NotificationFragment extends Fragment {
         binding.mainRecyclerView.setAdapter(ppAdapter);
     }
 
-    private void goMessageDetail(Message message){
+    private void goMessageDetail(Message message) {
+        if (message.getType() == 8 || message.getType() == 16 || message.getType() == 9) {
+            Intent intent = new Intent(getActivity(), UserHomePageActivity.class);
+            intent.putExtra("userId", message.getUserId());
+            getActivity().startActivity(intent);
+        } else if (message.getType() == 1 || message.getType() == 6) {
+            Intent intent = new Intent(getActivity(), MomentDetailActivity.class);
+            intent.putExtra("momentId", message.getMomentId());
+            getActivity().startActivity(intent);
+        }
 
     }
 

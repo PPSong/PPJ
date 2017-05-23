@@ -960,41 +960,48 @@ public class PPHelper {
         message.setCreateTime(PPHelper.ppFromString(s, "createTime").getAsLong());
         String content = "";
 
-        Log.v("pplog", "parseMessage type:" + type);
+        if (type == 1 || type == 6 ){
+            message.setMomentId(PPHelper.ppFromString(s, "params.mid").getAsString());
+        }
 
         //nickname, avatar, content
-        switch (type) {
-            case 8:
-            case 9:
-            case 10:
-                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
-                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
-                content = PPHelper.ppFromString(s, "content").getAsString();
-                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
-                return message;
+        if (type == 1 || type == 6 || type == 8 || type == 9 || type == 10 || type == 11 || type == 15 || type == 16) {
+            message.setId(PPHelper.ppFromString(s, "id").getAsString());
+            message.setUserId(PPHelper.ppFromString(s, "params.targetUser.id").getAsString());
+            message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
+            message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
+            message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
 
-            case 15:
-                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
-                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
-                content = PPHelper.ppFromString(s, "content").getAsString();
-                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
-                return message;
-
-            case 16:
-                message.setNickname(PPHelper.ppFromString(s, "params.targetUser.nickname").getAsString());
-                message.setAvatar(PPHelper.ppFromString(s, "params.targetUser.head").getAsString());
-                content = PPHelper.ppFromString(s, "content").getAsString();
-                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
-                return message;
-
-            default:
-                Log.v("pplog", "未处理:" + type);
-                message.setNickname(PPHelper.currentUserNickname);
-                message.setAvatar(PPHelper.currentUserAvatar);
-                content = "未处理:" + s;
-                message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
-                return message;
+        } else {
+            Log.v("pplog", "未处理:" + type);
+            message.setNickname(PPHelper.currentUserNickname);
+            message.setAvatar(PPHelper.currentUserAvatar);
+            content = "未处理:" + s;
+            message.setContent(TextUtils.isEmpty(content) ? PPApplication.getContext().getResources().getString(R.string.empty) : content);
+            return message;
         }
+
+        if (type == 6) {
+            content = message.getNickname() + PPApplication.getContext().getString(R.string.like_your_moment);
+        } else if (type == 1) {
+            content = message.getNickname() + PPApplication.getContext().getString(R.string.reply_your_moment);
+        } else if (type == 8) {
+            content = message.getNickname() + PPApplication.getContext().getString(R.string.follow_you_footprint);
+        } else if (type == 16) {
+            content = String.format(PPApplication.getContext().getString(R.string.you_sb_shoulder_meet), message.getNickname());
+        } else if (type == 10) {
+            content = String.format(PPApplication.getContext().getString(R.string.you_get_sb_mail), message.getNickname());
+        } else if (type == 15) {
+            content = String.format(PPApplication.getContext().getString(R.string.you_follow_sb_moment), message.getNickname());
+        } else if (type == 9) {
+            content = String.format(PPApplication.getContext().getString(R.string.you_and_sb_be_friend), message.getNickname());
+        } else if (type == 11) {
+            content = String.format(PPApplication.getContext().getString(R.string.get_sb_reply_mail), message.getNickname());
+        }
+
+        message.setContent(content);
+        return message;
+
     }
 
     public static int getMomentOverviewBackgroundColor(int position) {
@@ -1021,7 +1028,7 @@ public class PPHelper {
                                     Activity activity) {
         try {
             if (view != null && view instanceof EditText) {
-                int[] location = { 0, 0 };
+                int[] location = {0, 0};
                 view.getLocationInWindow(location);
                 int left = location[0], top = location[1], right = left
                         + view.getWidth(), bootom = top + view.getHeight();

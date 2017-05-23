@@ -30,4 +30,12 @@
     <string name="jiban">Jiban</string>
     <string name="exit_tips">如需退出请使用退出菜单键</string>
     <string name="earth">地球上,出去走两步会获得具体地址</string>
+    <string name="like_your_moment">like了你的片刻</string>
+    <string name="reply_your_moment">回复了你的片刻</string>
+    <string name="follow_you_footprint">follow了你的足迹</string>
+    <string name="you_sb_shoulder_meet">你和%1$s擦肩而过</string>
+    <string name="you_get_sb_mail">哟,你收到了%1$s寄来的一封书信呢</string>
+    <string name="you_follow_sb_moment">你迹录了%1$s的片刻</string>
+    <string name="you_and_sb_be_friend">恭喜,%1$s与你互粉成为伴友</string>
+    <string name="get_sb_reply_mail">好激动,%1$s给你回信了呢</string>
 </resources>

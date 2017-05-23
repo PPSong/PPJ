@@ -15,22 +15,39 @@ import static com.penn.ppj.util.PPHelper.ppFromString;
 public class Message extends RealmObject {
     @PrimaryKey
     private String id;
+    private String userId;
+    private String content;
     private long createTime;
     private String nickname;
     private boolean read;
     private String messageType;
     private String avatar;
     private int type;
+    private String momentId;
+
+    public String getMomentId() {
+        return momentId;
+    }
+
+    public void setMomentId(String momentId) {
+        this.momentId = momentId;
+    }
 
     public String getContent() {
         return content;
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public void setContent(String content) {
         this.content = content;
     }
-
-    private String content;
 
     public String getId() {
         return id;

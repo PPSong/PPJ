@@ -121,6 +121,7 @@ public class PPSocketSingleton {
     }
 
     private void sync() {
+        Log.v("pplog502", "sync");
         PPHelper.networkConnectNeedToRefresh();
     }
 }

@@ -1,6 +1,10 @@
 package com.penn.ppj.model.realm;
 
+import android.view.View;
+
+import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.util.PPHelper;
 
 import java.util.List;
 
@@ -122,6 +126,10 @@ public class MomentDetail extends RealmObject {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public int deletable() {
+        return getUserId().equals(PPHelper.currentUserId) ? View.VISIBLE : View.INVISIBLE;
     }
 
 }

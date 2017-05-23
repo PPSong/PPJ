@@ -53,16 +53,6 @@
                 android:layout_height="wrap_content">
 
                 <Button
-                    android:id="@+id/moment_button"
-                    style="@style/InlineActionButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:drawableTop="@drawable/avd_shots"
-                    tools:text="33 views" />
-
-
-                <Button
                     android:id="@+id/fans_button"
                     style="@style/InlineActionButton"
                     android:layout_width="0dp"

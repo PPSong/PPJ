@@ -1,9 +1,13 @@
 package com.penn.ppj;
 
+import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.os.Bundle;
+import android.support.constraint.ConstraintLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,6 +20,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.gson.JsonArray;
@@ -23,6 +29,7 @@ import com.jakewharton.rxbinding2.view.RxView;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.CommentCellBinding;
 import com.penn.ppj.databinding.MomentDetailHeadBinding;
+import com.penn.ppj.messageEvent.MomentDeleteEvent;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentDetail;
@@ -30,11 +37,14 @@ import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
+import com.penn.ppj.util.ImageViewerActivity;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 import com.squareup.picasso.Picasso;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +64,7 @@ import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static android.R.attr.pointerIcon;
 import static android.R.attr.scrollY;
 import static com.penn.ppj.R.id.imageView;
 import static com.penn.ppj.R.string.moment;
@@ -78,6 +89,8 @@ public class MomentDetailActivity extends AppCompatActivity {
 
     private OrderedRealmCollectionChangeListener<RealmResults<Comment>> commentsChangeListener;
 
+    private OnItemClickListener onItemClickListener;
+
     private PPAdapter ppAdapter;
 
     private LinearLayoutManager linearLayoutManager;
@@ -90,6 +103,10 @@ public class MomentDetailActivity extends AppCompatActivity {
     private int floatingButtonHalfHeight;
 
     private boolean likeButtonSetuped = false;
+
+    interface OnItemClickListener {
+        void onClick(Comment comment);
+    }
 
     private final View.OnClickListener commentOnClickListener = new View.OnClickListener() {
         @Override
@@ -109,6 +126,8 @@ public class MomentDetailActivity extends AppCompatActivity {
     class PPAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private static final int HEAD = 1;
         private static final int COMMENT = 2;
+
+        private OnItemClickListener onItemClickListener;
 
         private List<Comment> data;
 
@@ -152,6 +171,10 @@ public class MomentDetailActivity extends AppCompatActivity {
             this.data = data;
         }
 
+        public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+            this.onItemClickListener = onItemClickListener;
+        }
+
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             Log.v("pplog", "onCreateViewHolder");
@@ -187,8 +210,16 @@ public class MomentDetailActivity extends AppCompatActivity {
                 ((PPHead) holder).binding.setData(momentDetail);
                 Log.v("pplog", "height setdata2:" + (momentDetail == null ? "null" : momentDetail.getContent()));
             } else {
-                Comment comment = data.get(position - 1);
+                final Comment comment = data.get(position - 1);
+                final int tmpPostion = position;
                 ((PPHoldView) holder).binding.setData(comment);
+
+                ((PPHoldView) holder).binding.deleteImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        onItemClickListener.onClick(comment);
+                    }
+                });
             }
         }
 
@@ -228,12 +259,16 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_moment_detail);
 
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, PPHelper.getStatusBarAddActionBarHeight(this));
+        binding.toolbarConstraintLayout.setLayoutParams(params);
+
         momentDetailChangeListener = new RealmChangeListener<MomentDetail>() {
             @Override
             public void onChange(MomentDetail element) {
-                Log.v("pplog", element.getId() + "," + element.getContent());
-                binding.setData(element);
-                momentDetailHeadBinding.setData(element);
+                if (element.isValid()) {
+                    binding.setData(element);
+                    momentDetailHeadBinding.setData(element);
+                }
             }
         };
 
@@ -268,6 +303,77 @@ public class MomentDetailActivity extends AppCompatActivity {
         comments.addChangeListener(commentsChangeListener);
 
         ppAdapter = new PPAdapter(comments);
+
+        onItemClickListener = new OnItemClickListener() {
+            @Override
+            public void onClick(final Comment comment) {
+                if (comment.getStatus().equals(CommentStatus.NET)) {
+                    final String commentId = comment.getId();
+                    final String momentId = comment.getMomentId();
+                    //确认对话框
+                    AlertDialog.Builder alert = new AlertDialog.Builder(
+                            MomentDetailActivity.this);
+                    alert.setTitle(getString(R.string.warn));
+                    alert.setMessage(getString(R.string.delete_are_you_sure));
+                    alert.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //do your work here
+                            dialog.dismiss();
+                            PPJSONObject jBody = new PPJSONObject();
+                            jBody
+                                    .put("replyID", commentId)
+                                    .put("momentID", momentId);
+
+                            final Observable<String> apiResult = PPRetrofit.getInstance()
+                                    .api("moment.delReply", jBody.getJSONObject());
+
+                            apiResult
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(
+                                            new Consumer<String>() {
+                                                @Override
+                                                public void accept(@NonNull String s) throws Exception {
+
+                                                    PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                                    if (ppWarn != null) {
+                                                        throw new Exception(ppWarn.msg);
+                                                    }
+
+                                                    realm.beginTransaction();
+                                                    comment.deleteFromRealm();
+                                                    realm.commitTransaction();
+                                                }
+                                            },
+                                            new Consumer<Throwable>() {
+                                                @Override
+                                                public void accept(@NonNull Throwable throwable) throws Exception {
+                                                    PPHelper.error(throwable.toString());
+                                                    getMomentDetail();
+                                                }
+                                            }
+                                    );
+
+                        }
+                    });
+                    alert.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+                        }
+                    });
+
+                    alert.show();
+                }
+            }
+        };
+
+        ppAdapter.setOnItemClickListener(onItemClickListener);
 
         linearLayoutManager = new LinearLayoutManager(this);
 
@@ -308,18 +414,104 @@ public class MomentDetailActivity extends AppCompatActivity {
             }
         });
 
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
+        //back按钮监控
+        Observable<Object> bakeButtonObservable = RxView.clicks(binding.backImageButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
 
-//        binding.commentTextInputEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-//            @Override
-//            public void onFocusChange(View v, boolean hasFocus) {
-//                if (!hasFocus) {
-//                    binding.commentTextInputEditText.clearFocus();
-//                    hideKeyboard(MomentDetailActivity.this);
-//                }
-//            }
-//        });
+        bakeButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .
+
+                        observeOn(AndroidSchedulers.mainThread())
+                .
+
+                        subscribe(
+                                new Consumer<Object>() {
+                                    public void accept(Object o) {
+                                        finish();
+                                    }
+                                }
+                        );
+
+        //deleteMoment按钮监控
+        Observable<Object> deleteMomentButtonObservable = RxView.clicks(binding.deleteMomentImageButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        deleteMomentButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .
+
+                        observeOn(AndroidSchedulers.mainThread())
+                .
+
+                        subscribe(
+                                new Consumer<Object>() {
+                                    public void accept(Object o) {
+                                        //确认对话框
+                                        AlertDialog.Builder alert = new AlertDialog.Builder(
+                                                MomentDetailActivity.this);
+                                        alert.setTitle(getString(R.string.warn));
+                                        alert.setMessage(getString(R.string.delete_are_you_sure));
+                                        alert.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                //do your work here
+                                                dialog.dismiss();
+                                                PPJSONObject jBody = new PPJSONObject();
+                                                jBody
+                                                        .put("id", momentId);
+
+                                                final Observable<String> apiResult = PPRetrofit.getInstance()
+                                                        .api("moment.del", jBody.getJSONObject());
+
+                                                apiResult
+                                                        .subscribeOn(Schedulers.io())
+                                                        .observeOn(AndroidSchedulers.mainThread())
+                                                        .subscribe(
+                                                                new Consumer<String>() {
+                                                                    @Override
+                                                                    public void accept(@NonNull String s) throws Exception {
+
+                                                                        PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                                                        if (ppWarn != null) {
+                                                                            throw new Exception(ppWarn.msg);
+                                                                        }
+
+                                                                        momentDetail.removeAllChangeListeners();
+                                                                        comments.removeAllChangeListeners();
+
+                                                                        String tmpMomentId = momentDetail.getId();
+
+                                                                        EventBus.getDefault().post(new MomentDeleteEvent(tmpMomentId));
+
+                                                                        finish();
+                                                                    }
+                                                                },
+                                                                new Consumer<Throwable>() {
+                                                                    @Override
+                                                                    public void accept(@NonNull Throwable throwable) throws Exception {
+                                                                        PPHelper.error(throwable.toString());
+                                                                    }
+                                                                }
+                                                        );
+
+                                            }
+                                        });
+                                        alert.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+
+                                                dialog.dismiss();
+                                            }
+                                        });
+
+                                        alert.show();
+                                    }
+                                }
+                        );
 
         //like按钮监控
         Observable<Object> likeButtonObservable = RxView.clicks(binding.likeFabToggle)
@@ -399,6 +591,13 @@ public class MomentDetailActivity extends AppCompatActivity {
                 load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).
 
                 into(binding.commentAvatarCircleImageView);
+
+        binding.mainImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ImageViewerActivity.start(MomentDetailActivity.this, PPHelper.get800ImageUrl(momentDetail.getPic()), binding.mainImageView);
+            }
+        });
     }
 
     private void sendComment() {
@@ -459,12 +658,12 @@ public class MomentDetailActivity extends AppCompatActivity {
                                     throw new Exception(ppWarn.msg);
                                 }
 
-                                Log.v("pplog", "in:" + realm.isInTransaction());
-                                realm.beginTransaction();
-                                comment2.setStatus(CommentStatus.NET);
-                                realm.copyToRealm(comment2);
+//                                realm.beginTransaction();
+//                                comment2.setStatus(CommentStatus.NET);
+//                                realm.copyToRealm(comment2);
+//                                realm.commitTransaction();
 
-                                realm.commitTransaction();
+                                getMomentDetail();
                             }
                         },
                         new Consumer<Throwable>() {
@@ -494,7 +693,6 @@ public class MomentDetailActivity extends AppCompatActivity {
         jBody
                 .put("id", momentId);
 
-        Log.v("pplog252", api);
         final Observable<String> apiResult = PPRetrofit.getInstance()
                 .api(api, jBody.getJSONObject());
 
@@ -575,6 +773,7 @@ public class MomentDetailActivity extends AppCompatActivity {
                 Log.v("pplog", "setupBindingData ok");
                 binding.setData(this.momentDetail);
                 momentDetailHeadBinding.setData(this.momentDetail);
+                binding.progressFrameLayout.setVisibility(View.INVISIBLE);
 
                 //由于layout展开需要时间, 所以设置延时, 要不然获得的高度为0
                 binding.mainRecyclerView.postDelayed(new Runnable() {

@@ -1,7 +1,11 @@
 package com.penn.ppj.model.realm;
 
+import android.util.Log;
+import android.view.View;
+
 import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.util.PPHelper;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -101,5 +105,9 @@ public class Comment extends RealmObject {
 
     public void setLastVisitTime(long lastVisitTime) {
         this.lastVisitTime = lastVisitTime;
+    }
+
+    public int deletable() {
+        return (getUserId().equals(PPHelper.currentUserId) && getStatus() == CommentStatus.NET) ? View.VISIBLE : View.INVISIBLE;
     }
 }

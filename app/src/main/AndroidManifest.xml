@@ -51,9 +51,11 @@
         <activity
             android:name=".MomentDetailActivity"
             android:label="@string/title_activity_moment_detail"
-            android:theme="@style/AppTheme" />
+            />
         <activity android:name=".UserHomePageActivity" />
         <activity android:name=".CreateMomentActivity"></activity>
+
+        <activity android:name=".util.ImageViewerActivity"></activity>
 
         <service android:name=".PPService" />
 

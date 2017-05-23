@@ -38,4 +38,6 @@
     <string name="you_follow_sb_moment">你迹录了%1$s的片刻</string>
     <string name="you_and_sb_be_friend">恭喜,%1$s与你互粉成为伴友</string>
     <string name="get_sb_reply_mail">好激动,%1$s给你回信了呢</string>
+    <string name="delete_are_you_sure">确认要删除吗?</string>
+    <string name="warn">警告</string>
 </resources>

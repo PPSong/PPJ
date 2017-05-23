@@ -88,7 +88,7 @@ public class NotificationFragment extends Fragment {
         data = realm.where(Message.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
-        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
 
         scrollDirection
                 .distinctUntilChanged()
@@ -117,7 +117,7 @@ public class NotificationFragment extends Fragment {
             }
         });
 
-        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
 
         setup();
 

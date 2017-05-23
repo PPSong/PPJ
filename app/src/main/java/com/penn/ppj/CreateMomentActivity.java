@@ -47,7 +47,6 @@ import io.realm.RealmChangeListener;
 import io.realm.RealmModel;
 
 import static com.jakewharton.rxbinding2.widget.RxTextView.textChanges;
-import static com.penn.ppj.R.id.imageView;
 
 public class CreateMomentActivity extends TakePhotoActivity {
 

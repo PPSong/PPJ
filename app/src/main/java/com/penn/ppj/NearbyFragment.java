@@ -109,7 +109,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         data = realm.where(NearbyMoment.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
-        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
         binding.mainRecyclerView.setHasFixedSize(true);
 
         geoStr = PPHelper.getLatestGeoString();

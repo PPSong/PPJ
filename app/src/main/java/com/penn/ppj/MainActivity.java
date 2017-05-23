@@ -8,6 +8,7 @@ import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -21,7 +22,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
+import com.penn.ppj.messageEvent.MomentDeleteEvent;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
 import com.penn.ppj.messageEvent.UserLoginEvent;
@@ -45,6 +49,7 @@ import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.storage.Configuration;
 import com.qiniu.android.storage.UpCompletionHandler;
 import com.qiniu.android.storage.UploadManager;
+import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -73,7 +78,10 @@ import io.realm.RealmList;
 
 import static android.R.attr.key;
 import static android.os.Build.VERSION_CODES.M;
+import static com.penn.ppj.R.id.item_touch_helper_previous_elevation;
+import static com.penn.ppj.R.id.main_nav_view;
 import static com.penn.ppj.util.PPHelper.AUTH_BODY_KEY;
+import static com.penn.ppj.util.PPHelper.currentUserAvatar;
 import static com.penn.ppj.util.PPHelper.ppWarning;
 import static com.penn.ppj.util.PPRetrofit.authBody;
 
@@ -105,18 +113,6 @@ public class MainActivity extends AppCompatActivity
     private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
 
     @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
-    }
-
-    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CREATE_MOMENT && resultCode == RESULT_OK) {
@@ -127,9 +123,15 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onDestroy() {
+        EventBus.getDefault().unregister(this);
+        super.onDestroy();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        EventBus.getDefault().register(this);
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 //            getWindow().setStatusBarColor(Color.TRANSPARENT);
 //        }
@@ -140,7 +142,7 @@ public class MainActivity extends AppCompatActivity
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) binding.mainToolbar.getLayoutParams();
+        AppBarLayout.LayoutParams layoutParams = (AppBarLayout.LayoutParams) binding.mainToolbar.getLayoutParams();
         layoutParams.height = PPHelper.getStatusBarAddActionBarHeight(this);
         Log.v("pplog", "getStatusBarAddActionBarHeight:" + PPHelper.getStatusBarAddActionBarHeight(this));
         binding.mainToolbar.setLayoutParams(layoutParams);
@@ -162,8 +164,24 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.main_nav_view);
+        NavigationView navigationView = (NavigationView) findViewById(main_nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        View hView =  navigationView.getHeaderView(0);
+        ImageView avatarImageView = (ImageView)hView.findViewById(R.id.imageView);
+
+        Picasso.with(this)
+                .load(PPHelper.get80ImageUrl(currentUserAvatar))
+                .into(avatarImageView);
+
+        avatarImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, UserHomePageActivity.class);
+                intent.putExtra("userId", PPHelper.currentUserId);
+                MainActivity.this.startActivity(intent);
+            }
+        });
 
         PPPagerAdapter adapter = new PPPagerAdapter(getSupportFragmentManager());
         dashboardFragment = new DashboardFragment();
@@ -202,24 +220,30 @@ public class MainActivity extends AppCompatActivity
 //    }
 
     //-----helper-----
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void ToggleToolBarEvent(ToggleToolBarEvent event) {
-        if (event.show) {
-            binding.mainToolbar.animate()
-                    .translationY(0)
-                    .setDuration(100L)
-                    .setInterpolator(new LinearInterpolator());
-        } else {
-            binding.mainToolbar.animate()
-                    .translationY(PPHelper.getStatusBarAddActionBarHeight(this) * -1)
-                    .setDuration(100L)
-                    .setInterpolator(new LinearInterpolator());
-        }
-    }
+//    @Subscribe(threadMode = ThreadMode.MAIN)
+//    public void ToggleToolBarEvent(ToggleToolBarEvent event) {
+//        if (event.show) {
+//            binding.mainToolbar.animate()
+//                    .translationY(0)
+//                    .setDuration(100L)
+//                    .setInterpolator(new LinearInterpolator());
+//        } else {
+//            binding.mainToolbar.animate()
+//                    .translationY(PPHelper.getStatusBarAddActionBarHeight(this) * -1)
+//                    .setDuration(100L)
+//                    .setInterpolator(new LinearInterpolator());
+//        }
+//    }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void MomentPublishEvent(MomentPublishEvent event) {
         PPHelper.refreshMoment(event.id);
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void MomentDeleteEvent(MomentDeleteEvent event) {
+        Log.v("pplog508", "MomentDeleteEvent:" + event.id);
+        PPHelper.removeMoment(event.id);
     }
 
     private Observable<String> uploadSingleImage(final byte[] data, final String key, final String token) {

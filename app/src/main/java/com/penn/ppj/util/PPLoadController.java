@@ -22,7 +22,7 @@ import io.reactivex.subjects.BehaviorSubject;
 public class PPLoadController extends RecyclerView.OnScrollListener implements SwipeRefreshLayout.OnRefreshListener {
     private boolean dataLoading = false;
     //default value 5
-    private int loadMoreDistance = 0;
+    private int loadMoreDistance = 10;
 
     private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
 

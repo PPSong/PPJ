@@ -129,7 +129,7 @@ public class DashboardFragment extends Fragment {
             }
         });
 
-        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
+//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
 
         setup();
 
@@ -153,6 +153,7 @@ public class DashboardFragment extends Fragment {
     private final OrderedRealmCollectionChangeListener<RealmResults<Moment>> changeListener = new OrderedRealmCollectionChangeListener<RealmResults<Moment>>() {
         @Override
         public void onChange(RealmResults<Moment> collection, OrderedCollectionChangeSet changeSet) {
+            Log.v("pplog508", "OrderedRealmCollectionChangeListener");
             // `null`  means the async query returns the first time.
             if (changeSet == null) {
                 ppAdapter.notifyDataSetChanged();

@@ -42,6 +42,7 @@ import com.penn.ppj.model.realm.CurrentUser;
 import com.penn.ppj.model.realm.Message;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
+import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.model.realm.RelatedUser;
 import com.penn.ppj.ppEnum.MomentStatus;
@@ -960,7 +961,7 @@ public class PPHelper {
         message.setCreateTime(PPHelper.ppFromString(s, "createTime").getAsLong());
         String content = "";
 
-        if (type == 1 || type == 6 ){
+        if (type == 1 || type == 6) {
             message.setMomentId(PPHelper.ppFromString(s, "params.mid").getAsString());
         }
 
@@ -1051,6 +1052,19 @@ public class PPHelper {
         if (view != null) {
             InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        }
+    }
+
+    public static void removeMoment(String momentId) {
+        Log.v("pplog508", "removeMoment:" + momentId);
+        try (Realm realm = Realm.getDefaultInstance()) {
+            realm.beginTransaction();
+
+            realm.where(MomentDetail.class).equalTo("id", momentId).findFirst().deleteFromRealm();
+            realm.where(Moment.class).equalTo("id", momentId).findFirst().deleteFromRealm();
+            realm.where(Comment.class).equalTo("momentId", momentId).findAll().deleteAllFromRealm();
+
+            realm.commitTransaction();
         }
     }
 }

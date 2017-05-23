@@ -139,21 +139,6 @@ public class UserHomePageActivity extends AppCompatActivity {
                         }
                 );
 
-        //moment按钮监控
-        Observable<Object> momentButtonObservable = RxView.clicks(binding.momentButton)
-                .debounce(200, TimeUnit.MILLISECONDS);
-
-        momentButtonObservable
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                ((AnimatedVectorDrawable) binding.momentButton.getCompoundDrawables()[1]).start();
-                            }
-                        }
-                );
-
         //fans按钮监控
         Observable<Object> fansButtonObservable = RxView.clicks(binding.fansButton)
                 .debounce(200, TimeUnit.MILLISECONDS);
@@ -304,15 +289,13 @@ public class UserHomePageActivity extends AppCompatActivity {
     }
 
     private void setupButtonsText() {
-        long momentsNum = realm.where(Moment.class).equalTo("userId", PPHelper.currentUserId).count();
         long fansNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FAN.toString()).count();
         long followsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).count();
         long friendsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FRIEND.toString()).count();
 
-        binding.momentButton.setText("" + momentsNum);
-        binding.fansButton.setText("" + fansNum);
-        binding.followsButton.setText("" + followsNum);
-        binding.friendsButton.setText("" + friendsNum);
+        binding.fansButton.setText("" + fansNum + getString(R.string.fan));
+        binding.followsButton.setText("" + followsNum + getString(R.string.follow));
+        binding.friendsButton.setText("" + friendsNum + getString(R.string.friend));
     }
 
     private void restoreLocalUserHomePage() {
@@ -329,7 +312,19 @@ public class UserHomePageActivity extends AppCompatActivity {
                 this.userHomePage = userHomePage;
                 this.userHomePage.addChangeListener(userHomePageChangeListener);
                 binding.setData(this.userHomePage);
+                setupChangeAvatar();
             }
+        }
+    }
+
+    private void setupChangeAvatar() {
+        if (userHomePage.getUserId() == PPHelper.currentUserId) {
+            binding.avatarImageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    
+                }
+            });
         }
     }
 

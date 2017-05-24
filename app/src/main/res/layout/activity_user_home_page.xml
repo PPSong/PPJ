@@ -46,6 +46,41 @@
                 android:textOff="@string/follow"
                 android:textOn="@string/unfollowing" />
 
+            <LinearLayout
+                android:paddingTop="@dimen/common"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/meet_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/accent"
+                    android:drawableTop="@drawable/ic_compare_arrows_black_24dp_grey"
+                    tools:text="33 likes" />
+
+                <Button
+                    android:id="@+id/collect_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/ic_bookmark_black_24dp_grey"
+                    tools:text="33 views" />
+
+                <Button
+                    android:id="@+id/be_collected_button"
+                    style="@style/InlineActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/ic_book_black_24dp_grey"
+                    tools:text="33 views" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <android.support.v4.widget.NestedScrollView

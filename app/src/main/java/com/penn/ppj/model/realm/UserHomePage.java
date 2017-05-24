@@ -19,6 +19,9 @@ public class UserHomePage extends RealmObject {
     private String userId;
     private String nickname;
     private String avatar;
+    private int meets;
+    private int collects;
+    private int beCollecteds;
     private boolean isFollowed;
     private long lastVisitTime;
 
@@ -60,5 +63,29 @@ public class UserHomePage extends RealmObject {
 
     public void setLastVisitTime(long lastVisitTime) {
         this.lastVisitTime = lastVisitTime;
+    }
+
+    public int getMeets() {
+        return meets;
+    }
+
+    public void setMeets(int meets) {
+        this.meets = meets;
+    }
+
+    public int getCollects() {
+        return collects;
+    }
+
+    public void setCollects(int collects) {
+        this.collects = collects;
+    }
+
+    public int getBeCollecteds() {
+        return beCollecteds;
+    }
+
+    public void setBeCollecteds(int beCollecteds) {
+        this.beCollecteds = beCollecteds;
     }
 }

@@ -42,6 +42,7 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Function3;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
@@ -49,6 +50,7 @@ import io.realm.RealmResults;
 import io.realm.Sort;
 
 import static com.baidu.location.h.j.U;
+import static com.baidu.location.h.j.s;
 import static com.penn.ppj.PPApplication.getContext;
 import static com.penn.ppj.R.id.liked;
 
@@ -198,8 +200,6 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         ppAdapter = new PPAdapter(moments);
         binding.mainRecyclerView.setAdapter(ppAdapter);
-
-        setupButtonsText();
     }
 
     @Override
@@ -242,9 +242,9 @@ public class UserHomePageActivity extends AppCompatActivity {
     }
 
     private void setupButtonsText() {
-        long fansNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FAN.toString()).count();
-        long followsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FOLLOW.toString()).count();
-        long friendsNum = realm.where(RelatedUser.class).equalTo("type", RelatedUserType.FRIEND.toString()).count();
+        binding.meetButton.setText("" + userHomePage.getMeets() + getString(R.string.meet));
+        binding.collectButton.setText("" + userHomePage.getCollects() + getString(R.string.collect));
+        binding.beCollectedButton.setText("" + userHomePage.getBeCollecteds() + getString(R.string.be_collected));
     }
 
     private void restoreLocalUserHomePage() {
@@ -261,6 +261,7 @@ public class UserHomePageActivity extends AppCompatActivity {
                 this.userHomePage = userHomePage;
                 this.userHomePage.addChangeListener(userHomePageChangeListener);
                 binding.setData(this.userHomePage);
+                setupButtonsText();
                 setupChangeAvatar();
             }
         }
@@ -271,7 +272,7 @@ public class UserHomePageActivity extends AppCompatActivity {
             binding.avatarImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    
+
                 }
             });
         }
@@ -290,13 +291,19 @@ public class UserHomePageActivity extends AppCompatActivity {
 
         final Observable<String> apiResult2 = PPRetrofit.getInstance().api("user.info", jBody2.getJSONObject());
 
+        PPJSONObject jBody3 = new PPJSONObject();
+        jBody3
+                .put("target", userId);
+
+        final Observable<String> apiResult3 = PPRetrofit.getInstance().api("user.view", jBody3.getJSONObject());
+
         Observable
                 .zip(
-                        apiResult1, apiResult2, new BiFunction<String, String, String[]>() {
+                        apiResult1, apiResult2, apiResult3, new Function3<String, String, String, String[]>() {
 
                             @Override
-                            public String[] apply(@NonNull String s, @NonNull String s2) throws Exception {
-                                String[] result = {s, s2};
+                            public String[] apply(@NonNull String s, @NonNull String s2, @NonNull String s3) throws Exception {
+                                String[] result = {s, s2, s3};
 
                                 return result;
                             }
@@ -312,17 +319,25 @@ public class UserHomePageActivity extends AppCompatActivity {
                                 PPWarn ppWarn = PPHelper.ppWarning(result[0]);
 
                                 if (ppWarn != null) {
+                                    Log.v("pplog511", "1");
                                     throw new Exception(ppWarn.msg);
                                 }
 
                                 PPWarn ppWarn2 = PPHelper.ppWarning(result[1]);
 
                                 if (ppWarn2 != null) {
+                                    Log.v("pplog511", "2");
                                     throw new Exception(ppWarn2.msg);
                                 }
 
-                                processUserHomePage(result[0], result[1]);
-                                Log.v("pplog", "getServerUserHomePage:" + result[0]);
+                                PPWarn ppWarn3 = PPHelper.ppWarning(result[2]);
+
+                                if (ppWarn3 != null) {
+                                    Log.v("pplog511", "3");
+                                    throw new Exception(ppWarn3.msg);
+                                }
+
+                                processUserHomePage(result[0], result[1], result[2]);
 
                                 if (userHomePage == null) {
                                     setupBindingData(realm.where(UserHomePage.class).equalTo("userId", userId).findFirst());
@@ -340,7 +355,7 @@ public class UserHomePageActivity extends AppCompatActivity {
                 );
     }
 
-    private void processUserHomePage(String isFollowed, String userInfo) {
+    private void processUserHomePage(String isFollowed, String userInfo, String userView) {
         //构造userHomePage
         long now = System.currentTimeMillis();
 
@@ -349,6 +364,9 @@ public class UserHomePageActivity extends AppCompatActivity {
         userHomePage.setUserId(PPHelper.ppFromString(userInfo, "data.profile.id").getAsString());
         userHomePage.setNickname(PPHelper.ppFromString(userInfo, "data.profile.nickname").getAsString());
         userHomePage.setAvatar(PPHelper.ppFromString(userInfo, "data.profile.head").getAsString());
+        userHomePage.setMeets(PPHelper.ppFromString(userView, "data.meets").getAsInt());
+        userHomePage.setCollects(PPHelper.ppFromString(userView, "data.collects").getAsInt());
+        userHomePage.setBeCollecteds(PPHelper.ppFromString(userView, "data.beCollecteds").getAsInt());
         userHomePage.setLastVisitTime(now);
 
         try (Realm realm = Realm.getDefaultInstance()) {

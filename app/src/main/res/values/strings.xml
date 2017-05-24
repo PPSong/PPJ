@@ -40,4 +40,7 @@
     <string name="get_sb_reply_mail">好激动,%1$s给你回信了呢</string>
     <string name="delete_are_you_sure">确认要删除吗?</string>
     <string name="warn">警告</string>
+    <string name="meet">擦肩而过</string>
+    <string name="collect">收集</string>
+    <string name="be_collected">被收集</string>
 </resources>

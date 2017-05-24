@@ -148,7 +148,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.fansButton.getCompoundDrawables()[1]).start();
-                                // showRelatedUsers(RelatedUserType.FAN);
+                                showRelatedUsers(RelatedUserType.FAN);
                             }
                         }
                 );
@@ -164,7 +164,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.followsButton.getCompoundDrawables()[1]).start();
-                                // showRelatedUsers(RelatedUserType.FOLLOW);
+                                showRelatedUsers(RelatedUserType.FOLLOW);
                             }
                         }
                 );
@@ -180,7 +180,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.friendsButton.getCompoundDrawables()[1]).start();
-                                // showRelatedUsers(RelatedUserType.FRIEND);
+                                showRelatedUsers(RelatedUserType.FRIEND);
                             }
                         }
                 );

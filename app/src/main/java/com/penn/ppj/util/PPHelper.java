@@ -50,6 +50,10 @@ import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.PicStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
+import com.qiniu.android.http.ResponseInfo;
+import com.qiniu.android.storage.Configuration;
+import com.qiniu.android.storage.UpCompletionHandler;
+import com.qiniu.android.storage.UploadManager;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
@@ -60,6 +64,8 @@ import java.util.regex.Pattern;
 
 import es.dmoral.toasty.Toasty;
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
@@ -108,6 +114,10 @@ public class PPHelper {
     public static String baiduAk;
 
     private static ProgressDialog progressDialog;
+
+    private static Configuration config = new Configuration.Builder().build();
+
+    private static UploadManager uploadManager = new UploadManager(config);
 
     public static void clear() {
         currentUserId = null;
@@ -308,9 +318,9 @@ public class PPHelper {
                         return PPRetrofit.getInstance().api("user.startup", null);
                     }
                 })
-                .map(new Function<String, String>() {
+                .flatMap(new Function<String, ObservableSource<String[]>>() {
                     @Override
-                    public String apply(String s) throws Exception {
+                    public ObservableSource<String[]> apply(@NonNull String s) throws Exception {
                         PPWarn ppWarn = ppWarning(s);
                         if (ppWarn != null) {
                             throw new Exception(ppWarn.msg);
@@ -352,8 +362,47 @@ public class PPHelper {
                             //设置baiduAk
                             baiduAk = tmpAk;
                             realm.commitTransaction();
+
+
                         }
 
+                        PPJSONObject jBody1 = new PPJSONObject();
+                        JsonArray fields = new JsonArray();
+                        fields.add("follows");
+                        fields.add("fans");
+                        fields.add("friends");
+                        fields.add("momentBeLiked");
+
+                        jBody1
+                                .put("fields", fields.toString());
+
+                        final Observable<String> apiResult1 = PPRetrofit.getInstance().api("user.stats", jBody1.getJSONObject());
+
+                        PPJSONObject jBody2 = new PPJSONObject();
+                        jBody2
+                                .put("target", PPHelper.currentUserId);
+
+                        final Observable<String> apiResult2 = PPRetrofit.getInstance().api("user.info", jBody2.getJSONObject());
+
+                        return Observable
+                                .zip(
+                                        apiResult1, apiResult2, new BiFunction<String, String, String[]>() {
+
+                                            @Override
+                                            public String[] apply(@NonNull String s, @NonNull String s2) throws Exception {
+                                                String[] result = {s, s2};
+
+                                                return result;
+                                            }
+                                        }
+                                );
+                    }
+                })
+                .map(new Function<String[], String>() {
+                    @Override
+                    public String apply(String[] s) throws Exception {
+
+                        processMyProfile(s[0], s[1]);
                         Intent intent = new Intent(PPApplication.getContext(), new PPService().getClass());
                         PPApplication.getContext().startService(intent);
 
@@ -553,9 +602,6 @@ public class PPHelper {
 
     //包含所有网络获得链接后需要更新的事情
     public static void networkConnectNeedToRefresh() {
-        //pptodo 这个有隐患, 因为myProfile是一定要有的, 要不然mainActivity和MyProfileActivity都不能显示
-        refreshMyProfile();
-
         //我的moment
 
         long mostNewMomentCreateTime = 0;
@@ -1079,6 +1125,7 @@ public class PPHelper {
         fields.add("follows");
         fields.add("fans");
         fields.add("friends");
+        fields.add("momentBeLiked");
         jBody1
                 .put("fields", fields.toString());
 
@@ -1136,24 +1183,54 @@ public class PPHelper {
 
     public static void processMyProfile(String userStats, String userInfo) {
         try (Realm realm = Realm.getDefaultInstance()) {
+
+            realm.beginTransaction();
+
             MyProfile myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
 
-            myProfile.setUserId(PPHelper.currentUserId);
+            if (myProfile == null) {
+                myProfile = new MyProfile();
+                myProfile.setUserId(PPHelper.currentUserId);
+            }
+
 
             myProfile.setFollows(PPHelper.ppFromString(userStats, "data.follows").getAsInt());
             myProfile.setFans(PPHelper.ppFromString(userStats, "data.fans").getAsInt());
             myProfile.setFriends(PPHelper.ppFromString(userStats, "data.friends").getAsInt());
+            myProfile.setLikes(PPHelper.ppFromString(userStats, "data.momentBeLiked").getAsInt());
 
             myProfile.setNickname(PPHelper.ppFromString(userInfo, "data.profile.nickname").getAsString());
             myProfile.setAvatar(PPHelper.ppFromString(userInfo, "data.profile.head").getAsString());
-            myProfile.setLikes(PPHelper.ppFromString(userStats, "data.stats.momentBeLiked").getAsInt());
-
-
-            realm.beginTransaction();
 
             realm.insertOrUpdate(myProfile);
 
             realm.commitTransaction();
         }
+    }
+
+    public static Observable<String> uploadSingleImage(final byte[] data, final String key, final String token) {
+        return Observable.create(new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
+                uploadManager.put(data, key, token,
+                        new UpCompletionHandler() {
+                            @Override
+                            public void complete(String key, ResponseInfo info, JSONObject res) {
+                                //res包含hash、key等信息，具体字段取决于上传策略的设置
+                                if (info.isOK()) {
+                                    Log.i("qiniu", "Upload Success:" + key);
+                                    emitter.onNext(key);
+                                    emitter.onComplete();
+                                } else {
+                                    Log.i("qiniu", "Upload Fail");
+                                    //如果失败，这里可以把info信息上报自己的服务器，便于后面分析上传错误原因
+                                    Exception apiError = new Exception("七牛上传:" + key + "失败", new Throwable(info.error.toString()));
+                                    emitter.onError(apiError);
+                                }
+                                Log.i("qiniu", key + ",\r\n " + info + ",\r\n " + res);
+                            }
+                        }, null);
+            }
+        });
     }
 }

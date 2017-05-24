@@ -2,6 +2,8 @@ package com.penn.ppj;
 
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.net.Uri;
 import android.os.Environment;
@@ -17,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 
 import com.google.gson.JsonArray;
 import com.jakewharton.rxbinding2.view.RxView;
@@ -28,18 +31,28 @@ import com.jph.takephoto.model.TResult;
 import com.penn.ppj.databinding.ActivityMomentDetailBinding;
 import com.penn.ppj.databinding.ActivityMyProfileBinding;
 import com.penn.ppj.databinding.MomentOverviewCellBinding;
+import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.Moment;
+import com.penn.ppj.model.realm.MomentCreating;
 import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.MyProfile;
 import com.penn.ppj.model.realm.RelatedUser;
+import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.PPHelper;
 import com.penn.ppj.util.PPJSONObject;
 import com.penn.ppj.util.PPRetrofit;
 import com.penn.ppj.util.PPWarn;
 
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONArray;
+
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -60,6 +73,7 @@ import static com.baidu.location.h.j.U;
 import static com.baidu.location.h.j.m;
 import static com.penn.ppj.PPApplication.getContext;
 import static com.penn.ppj.R.id.liked;
+import static com.penn.ppj.util.PPHelper.ppWarning;
 
 public class MyProfileActivity extends TakePhotoFragmentActivity {
 
@@ -134,7 +148,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.fansButton.getCompoundDrawables()[1]).start();
-                               // showRelatedUsers(RelatedUserType.FAN);
+                                // showRelatedUsers(RelatedUserType.FAN);
                             }
                         }
                 );
@@ -150,7 +164,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.followsButton.getCompoundDrawables()[1]).start();
-                               // showRelatedUsers(RelatedUserType.FOLLOW);
+                                // showRelatedUsers(RelatedUserType.FOLLOW);
                             }
                         }
                 );
@@ -166,7 +180,7 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         new Consumer<Object>() {
                             public void accept(Object o) {
                                 ((AnimatedVectorDrawable) binding.friendsButton.getCompoundDrawables()[1]).start();
-                               // showRelatedUsers(RelatedUserType.FRIEND);
+                                // showRelatedUsers(RelatedUserType.FRIEND);
                             }
                         }
                 );
@@ -182,7 +196,9 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
             }
         };
 
-        setupBindingData(myProfile);
+        this.myProfile.addChangeListener(myProfileChangeListener);
+        binding.setData(this.myProfile);
+        setupChangeAvatar();
 
         PPHelper.refreshMyProfile();
 
@@ -236,19 +252,8 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
         binding.setData(myProfile);
     }
 
-    private void setupBindingData(MyProfile myProfile) {
-
-        synchronized (this) {
-            if (this.myProfile == null) {
-                this.myProfile = myProfile;
-                this.myProfile.addChangeListener(myProfileChangeListener);
-                binding.setData(this.myProfile);
-                setupChangeAvatar();
-            }
-        }
-    }
-
     private void setupChangeAvatar() {
+        Log.v("pplog509", "setupChangeAvatar");
         binding.avatarImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -284,11 +289,97 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
         super.takeSuccess(result);
 
         //修改页面上的avatar
-        realm.beginTransaction();
-        myProfile.setAvatar(result.getImages().get(0).getCompressPath());
-        realm.commitTransaction();
+        Bitmap myBitmap = BitmapFactory.decodeFile(result.getImages().get(0).getCompressPath());
+
+        binding.avatarImageView.setImageBitmap(myBitmap);
 
         //上传avatar
+        //申请上传图片的token
+        final String key = PPHelper.currentUserId + "_head_" + System.currentTimeMillis();
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("type", "public")
+                .put("filename", key);
+
+        final Observable<String> requestToken = PPRetrofit.getInstance().api("system.generateUploadToken", jBody.getJSONObject());
+
+        //上传avatar
+        PPJSONObject jBody1 = new PPJSONObject();
+        jBody1
+                .put("head", key);
+
+        final Observable<String> apiResult1 = PPRetrofit.getInstance()
+                .api("user.changeHead", jBody1.getJSONObject());
+
+
+        File file = new File(Environment.getExternalStorageDirectory(), "/temp/" + "tmp.jpg");
+        int size = (int) file.length();
+        final byte[] bytes = new byte[size];
+        try {
+            BufferedInputStream buf = new BufferedInputStream(new FileInputStream(file));
+            buf.read(bytes, 0, bytes.length);
+            buf.close();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            Log.v("pplog", "MomentCreating.setPic error:" + e.toString());
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            Log.v("pplog", "MomentCreating.setPic error:" + e.toString());
+            e.printStackTrace();
+        }
+
+        requestToken
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .flatMap(
+                        new Function<String, ObservableSource<String>>() {
+                            @Override
+                            public ObservableSource<String> apply(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception("ppError:" + ppWarn.msg + ":" + key);
+                                }
+                                String token = PPHelper.ppFromString(s, "data.token").getAsString();
+                                return PPHelper.uploadSingleImage(bytes, key, token);
+                            }
+                        }
+                )
+                .observeOn(Schedulers.io())
+                .flatMap(new Function<String, ObservableSource<String>>() {
+                    @Override
+                    public ObservableSource<String> apply(@NonNull String s) throws Exception {
+                        return apiResult1;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception("ppError:" + ppWarn.msg);
+                                }
+
+                                realm.beginTransaction();
+
+                                myProfile.setAvatar(key);
+
+                                realm.commitTransaction();
+
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    binding.setData(myProfile);
+                                }
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
 
     }
 

@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -34,6 +35,7 @@ import com.penn.ppj.databinding.ActivityMainBinding;
 import com.penn.ppj.model.realm.CurrentUser;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
+import com.penn.ppj.model.realm.MyProfile;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PPValueType;
@@ -73,16 +75,21 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
+import io.realm.RealmModel;
 
+import static android.R.attr.breadCrumbShortTitle;
 import static android.R.attr.key;
 import static android.os.Build.VERSION_CODES.M;
 import static com.penn.ppj.R.id.item_touch_helper_previous_elevation;
 import static com.penn.ppj.R.id.main_nav_view;
+import static com.penn.ppj.R.id.swiperefresh;
 import static com.penn.ppj.util.PPHelper.AUTH_BODY_KEY;
 import static com.penn.ppj.util.PPHelper.currentUserAvatar;
 import static com.penn.ppj.util.PPHelper.ppWarning;
+import static com.penn.ppj.util.PPHelper.uploadSingleImage;
 import static com.penn.ppj.util.PPRetrofit.authBody;
 
 public class MainActivity extends AppCompatActivity
@@ -100,10 +107,6 @@ public class MainActivity extends AppCompatActivity
 
     private Menu menu;
 
-    private Configuration config = new Configuration.Builder().build();
-
-    private UploadManager uploadManager = new UploadManager(config);
-
     private DashboardFragment dashboardFragment;
 
     private NearbyFragment nearbyFragment;
@@ -111,6 +114,10 @@ public class MainActivity extends AppCompatActivity
     private NotificationFragment notificationFragment;
 
     private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
+
+    private MyProfile myProfile;
+
+    private Realm realm = Realm.getDefaultInstance();
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -125,6 +132,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
+        realm.close();
         super.onDestroy();
     }
 
@@ -168,7 +176,17 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         View hView =  navigationView.getHeaderView(0);
-        ImageView avatarImageView = (ImageView)hView.findViewById(R.id.imageView);
+        final ImageView avatarImageView = (ImageView)hView.findViewById(R.id.imageView);
+
+        myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
+        myProfile.addChangeListener(new RealmChangeListener<MyProfile>() {
+            @Override
+            public void onChange(MyProfile element) {
+                Picasso.with(MainActivity.this)
+                        .load(PPHelper.get80ImageUrl(element.getAvatar()))
+                        .into(avatarImageView);
+            }
+        });
 
         Picasso.with(this)
                 .load(PPHelper.get80ImageUrl(currentUserAvatar))
@@ -177,8 +195,7 @@ public class MainActivity extends AppCompatActivity
         avatarImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, UserHomePageActivity.class);
-                intent.putExtra("userId", PPHelper.currentUserId);
+                Intent intent = new Intent(MainActivity.this, MyProfileActivity.class);
                 MainActivity.this.startActivity(intent);
             }
         });
@@ -193,6 +210,37 @@ public class MainActivity extends AppCompatActivity
         binding.mainViewPager.setAdapter(adapter);
         //有几个tab就设几防止page自己重新刷新
         binding.mainViewPager.setOffscreenPageLimit(3);
+
+        binding.mainToolbar.setTitle(getString(R.string.dashboard));
+
+        binding.mainViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                switch (position) {
+                    case DASHBOARD:
+                        binding.mainToolbar.setTitle(getString(R.string.dashboard));
+                        break;
+                    case NEARBY:
+                        binding.mainToolbar.setTitle(getString(R.string.nearby));
+                        break;
+                    case NOTIFICATION:
+                        binding.mainToolbar.setTitle(getString(R.string.notification));
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
 
         ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, binding.mainDrawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         mDrawerToggle.setDrawerIndicatorEnabled(false);
@@ -244,32 +292,6 @@ public class MainActivity extends AppCompatActivity
     public void MomentDeleteEvent(MomentDeleteEvent event) {
         Log.v("pplog508", "MomentDeleteEvent:" + event.id);
         PPHelper.removeMoment(event.id);
-    }
-
-    private Observable<String> uploadSingleImage(final byte[] data, final String key, final String token) {
-        return Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
-                uploadManager.put(data, key, token,
-                        new UpCompletionHandler() {
-                            @Override
-                            public void complete(String key, ResponseInfo info, JSONObject res) {
-                                //res包含hash、key等信息，具体字段取决于上传策略的设置
-                                if (info.isOK()) {
-                                    Log.i("qiniu", "Upload Success:" + key);
-                                    emitter.onNext(key);
-                                    emitter.onComplete();
-                                } else {
-                                    Log.i("qiniu", "Upload Fail");
-                                    //如果失败，这里可以把info信息上报自己的服务器，便于后面分析上传错误原因
-                                    Exception apiError = new Exception("七牛上传:" + key + "失败", new Throwable(info.error.toString()));
-                                    emitter.onError(apiError);
-                                }
-                                Log.i("qiniu", key + ",\r\n " + info + ",\r\n " + res);
-                            }
-                        }, null);
-            }
-        });
     }
 
     private void uploadMoment() {
@@ -334,7 +356,7 @@ public class MainActivity extends AppCompatActivity
                                     throw new Exception("ppError:" + ppWarn.msg + ":" + key);
                                 }
                                 String token = PPHelper.ppFromString(s, "data.token").getAsString();
-                                return uploadSingleImage(imageData, key, token);
+                                return PPHelper.uploadSingleImage(imageData, key, token);
                             }
                         }
                 )

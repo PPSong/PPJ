@@ -75,7 +75,7 @@ public class DashboardFragment extends Fragment {
             int position = binding.mainRecyclerView.getChildAdapterPosition(v);
             Moment moment = data.get(position);
 
-            if (moment.getStatus().equals(MomentStatus.NET)) {
+            if (moment.getStatus().equals(MomentStatus.NET) && moment.isDeleted() == false) {
                 Intent intent = new Intent(getContext(), MomentDetailActivity.class);
                 intent.putExtra("momentId", moment.getId());
                 startActivity(intent);
@@ -99,7 +99,7 @@ public class DashboardFragment extends Fragment {
 
         realm = Realm.getDefaultInstance();
 
-        data = realm.where(Moment.class).findAllSorted("createTime", Sort.DESCENDING);
+        data = realm.where(Moment.class).notEqualTo("deleted", true).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
         scrollDirection

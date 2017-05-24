@@ -66,6 +66,7 @@ import io.realm.Sort;
 
 import static android.R.attr.pointerIcon;
 import static android.R.attr.scrollY;
+import static com.baidu.location.h.j.C;
 import static com.penn.ppj.R.id.imageView;
 import static com.penn.ppj.R.string.moment;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
@@ -299,7 +300,7 @@ public class MomentDetailActivity extends AppCompatActivity {
             }
         };
 
-        comments = realm.where(Comment.class).equalTo("momentId", momentId).findAllSorted("createTime", Sort.DESCENDING);
+        comments = realm.where(Comment.class).equalTo("momentId", momentId).notEqualTo("deleted", true).findAllSorted("createTime", Sort.DESCENDING);
         comments.addChangeListener(commentsChangeListener);
 
         ppAdapter = new PPAdapter(comments);
@@ -319,44 +320,17 @@ public class MomentDetailActivity extends AppCompatActivity {
 
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            //do your work here
+                            //标记本地comment deleted为true
+                            try (Realm realm = Realm.getDefaultInstance()) {
+                                realm.beginTransaction();
+
+                                realm.where(Comment.class).equalTo("id", commentId).findFirst().setDeleted(true);
+
+                                realm.commitTransaction();
+                            }
+                            PPHelper.removeComment(comment);
                             dialog.dismiss();
-                            PPJSONObject jBody = new PPJSONObject();
-                            jBody
-                                    .put("replyID", commentId)
-                                    .put("momentID", momentId);
-
-                            final Observable<String> apiResult = PPRetrofit.getInstance()
-                                    .api("moment.delReply", jBody.getJSONObject());
-
-                            apiResult
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribe(
-                                            new Consumer<String>() {
-                                                @Override
-                                                public void accept(@NonNull String s) throws Exception {
-
-                                                    PPWarn ppWarn = PPHelper.ppWarning(s);
-
-                                                    if (ppWarn != null) {
-                                                        throw new Exception(ppWarn.msg);
-                                                    }
-
-                                                    realm.beginTransaction();
-                                                    comment.deleteFromRealm();
-                                                    realm.commitTransaction();
-                                                }
-                                            },
-                                            new Consumer<Throwable>() {
-                                                @Override
-                                                public void accept(@NonNull Throwable throwable) throws Exception {
-                                                    PPHelper.error(throwable.toString());
-                                                    getMomentDetail();
-                                                }
-                                            }
-                                    );
-
+                            Log.v("pplog509", "finished");
                         }
                     });
                     alert.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
@@ -457,46 +431,20 @@ public class MomentDetailActivity extends AppCompatActivity {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
                                                 //do your work here
+                                                //标记本地moment deleted为true, 删除本地momentDetail和相关comments
+                                                try (Realm realm = Realm.getDefaultInstance()) {
+                                                    realm.beginTransaction();
+
+                                                    realm.where(MomentDetail.class).equalTo("id", momentId).findFirst().deleteFromRealm();
+                                                    realm.where(Comment.class).equalTo("momentId", momentId).findAll().deleteAllFromRealm();
+                                                    realm.where(Moment.class).equalTo("id", momentId).findFirst().setDeleted(true);
+
+                                                    realm.commitTransaction();
+                                                }
+                                                finish();
+                                                EventBus.getDefault().post(new MomentDeleteEvent(momentId));
                                                 dialog.dismiss();
-                                                PPJSONObject jBody = new PPJSONObject();
-                                                jBody
-                                                        .put("id", momentId);
-
-                                                final Observable<String> apiResult = PPRetrofit.getInstance()
-                                                        .api("moment.del", jBody.getJSONObject());
-
-                                                apiResult
-                                                        .subscribeOn(Schedulers.io())
-                                                        .observeOn(AndroidSchedulers.mainThread())
-                                                        .subscribe(
-                                                                new Consumer<String>() {
-                                                                    @Override
-                                                                    public void accept(@NonNull String s) throws Exception {
-
-                                                                        PPWarn ppWarn = PPHelper.ppWarning(s);
-
-                                                                        if (ppWarn != null) {
-                                                                            throw new Exception(ppWarn.msg);
-                                                                        }
-
-                                                                        momentDetail.removeAllChangeListeners();
-                                                                        comments.removeAllChangeListeners();
-
-                                                                        String tmpMomentId = momentDetail.getId();
-
-                                                                        EventBus.getDefault().post(new MomentDeleteEvent(tmpMomentId));
-
-                                                                        finish();
-                                                                    }
-                                                                },
-                                                                new Consumer<Throwable>() {
-                                                                    @Override
-                                                                    public void accept(@NonNull Throwable throwable) throws Exception {
-                                                                        PPHelper.error(throwable.toString());
-                                                                    }
-                                                                }
-                                                        );
-
+                                                Log.v("pplog509", "finished");
                                             }
                                         });
                                         alert.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
@@ -910,7 +858,14 @@ public class MomentDetailActivity extends AppCompatActivity {
                 long createTime = PPHelper.ppFromString(commentsString, "data.list." + i + ".createTime").getAsLong();
                 String userId = PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.id").getAsString();
 
-                Comment comment = new Comment();
+                Comment comment = realm.where(Comment.class).equalTo("key", createTime + "_" + userId).equalTo("deleted", true).findFirst();
+                if (comment != null) {
+                    //如果这条记录本地已经标志为deleted, 则跳过
+                    continue;
+                }
+
+                comment = new Comment();
+
                 comment.setKey(createTime + "_" + userId);
                 comment.setId(PPHelper.ppFromString(commentsString, "data.list." + i + "._id").getAsString());
                 comment.setUserId(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.id").getAsString());

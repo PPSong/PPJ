@@ -26,6 +26,15 @@ public class Comment extends RealmObject {
     private String content;
     private String status;
     private long lastVisitTime;
+    private boolean deleted;
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
     public String getKey() {
         return key;

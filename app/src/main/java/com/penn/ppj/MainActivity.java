@@ -62,6 +62,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
+
 import de.jonasrottmann.realmbrowser.RealmBrowser;
 import es.dmoral.toasty.Toasty;
 import io.reactivex.Observable;
@@ -85,7 +86,7 @@ import static android.R.attr.key;
 import static android.os.Build.VERSION_CODES.M;
 import static com.penn.ppj.R.id.item_touch_helper_previous_elevation;
 import static com.penn.ppj.R.id.main_nav_view;
-import static com.penn.ppj.R.id.swiperefresh;
+
 import static com.penn.ppj.util.PPHelper.AUTH_BODY_KEY;
 import static com.penn.ppj.util.PPHelper.currentUserAvatar;
 import static com.penn.ppj.util.PPHelper.ppWarning;

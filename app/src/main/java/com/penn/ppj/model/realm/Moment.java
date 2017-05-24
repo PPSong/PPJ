@@ -19,6 +19,15 @@ public class Moment extends RealmObject {
     private String status;
     private Pic pic;
     private String avatar;
+    private boolean deleted;
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
     public String getKey() {
         return key;

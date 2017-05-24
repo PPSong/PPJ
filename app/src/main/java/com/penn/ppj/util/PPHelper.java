@@ -79,6 +79,7 @@ import io.realm.RealmList;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static com.baidu.location.h.j.p;
 import static com.penn.ppj.PPApplication.getContext;
 
 /**
@@ -241,6 +242,7 @@ public class PPHelper {
     }
 
     public static PPWarn ppWarning(String jServerResponse) {
+        Log.v("pplog510", jServerResponse);
         int code = ppFromString(jServerResponse, "code").getAsInt();
         if (code != 1) {
             return new PPWarn(jServerResponse);
@@ -256,7 +258,7 @@ public class PPHelper {
                 .name(phone + ".realm")
                 .build();
         //清除当前用户的数据文件, 测试用
-        boolean clearData = true;
+        boolean clearData = false;
         if (clearData) {
             Realm.deleteRealm(config);
         }
@@ -602,6 +604,19 @@ public class PPHelper {
 
     //包含所有网络获得链接后需要更新的事情
     public static void networkConnectNeedToRefresh() {
+        //删除应该删除的记录
+        try (Realm realm = Realm.getDefaultInstance()) {
+            RealmResults<Moment> moments = realm.where(Moment.class).equalTo("deleted", true).findAll();
+            for (Moment moment : moments) {
+                removeMoment(moment.getId());
+            }
+
+            RealmResults<Comment> comments = realm.where(Comment.class).equalTo("deleted", true).findAll();
+            for (Comment comment : comments) {
+                removeComment(comment);
+            }
+        }
+
         //我的moment
 
         long mostNewMomentCreateTime = 0;
@@ -1106,17 +1121,90 @@ public class PPHelper {
         }
     }
 
-    public static void removeMoment(String momentId) {
-        Log.v("pplog508", "removeMoment:" + momentId);
-        try (Realm realm = Realm.getDefaultInstance()) {
-            realm.beginTransaction();
+    public static void removeMoment(final String momentId) {
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("id", momentId);
 
-            realm.where(MomentDetail.class).equalTo("id", momentId).findFirst().deleteFromRealm();
-            realm.where(Moment.class).equalTo("id", momentId).findFirst().deleteFromRealm();
-            realm.where(Comment.class).equalTo("momentId", momentId).findAll().deleteAllFromRealm();
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api("moment.del", jBody.getJSONObject());
 
-            realm.commitTransaction();
-        }
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+
+                                PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                //pptodo 如果是已被删除错误提示也可以认为成功
+                                if (ppWarn != null && ppWarn.code != 1001) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.beginTransaction();
+                                    //这里用findAll().deleteAllFromRealm()就不用考虑多线程的问题, 最多查出来结果是空的list, 然后调用deleteAllFromRealm(), 应该不会出错
+                                    realm.where(Moment.class).equalTo("id", momentId).findAll().deleteAllFromRealm();
+                                    realm.commitTransaction();
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                                removeMoment(momentId);
+                            }
+                        }
+                );
+    }
+
+    public static void removeComment(final Comment comment) {
+        final String commentId = comment.getId();
+        final String momentId = comment.getMomentId();
+
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("replyID", commentId)
+                .put("momentID", momentId);
+
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api("moment.delReply", jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+
+                                PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                //pptodo 如果是已被删除错误提示也可以认为成功
+                                if (ppWarn != null && ppWarn.code != 1001) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                try (Realm realm1 = Realm.getDefaultInstance()) {
+                                    realm1.beginTransaction();
+                                    //这里用findAll().deleteAllFromRealm()就不用考虑多线程的问题, 最多查出来结果是空的list, 然后调用deleteAllFromRealm(), 应该不会出错
+                                    realm1.where(Comment.class).equalTo("id", commentId).findAll().deleteAllFromRealm();
+                                    realm1.commitTransaction();
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.error(throwable.toString());
+                                removeComment(comment);
+                            }
+                        }
+                );
     }
 
     public static void refreshMyProfile() {

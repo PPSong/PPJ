@@ -140,6 +140,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.v("pplog520", "mainActivity onCreate");
         EventBus.getDefault().register(this);
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 //            getWindow().setStatusBarColor(Color.TRANSPARENT);

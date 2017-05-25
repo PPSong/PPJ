@@ -23,6 +23,7 @@ import com.jakewharton.rxbinding2.view.RxView;
 import com.penn.ppj.databinding.FragmentLoginBinding;
 import com.penn.ppj.messageEvent.LoginRegisterProgressEvent;
 import com.penn.ppj.util.PPHelper;
+import com.penn.ppj.util.PPWarn;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -133,8 +134,10 @@ public class LoginFragment extends Fragment {
                 })
                 .subscribe(
                         new Consumer<String>() {
+
                             @Override
                             public void accept(@NonNull String s) throws Exception {
+                               
                                 Intent intent = new Intent(getContext(), MainActivity.class);
                                 startActivity(intent);
                             }
@@ -143,6 +146,7 @@ public class LoginFragment extends Fragment {
                             @Override
                             public void accept(@NonNull Throwable throwable) throws Exception {
                                 PPHelper.error(throwable.toString());
+                                Log.v("pplog", "error:" + throwable.toString());
                             }
                         }
                 );

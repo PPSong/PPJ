@@ -99,6 +99,8 @@ public class PPHelper {
 
     public static final String qiniuBase = "http://7xu8w0.com1.z0.glb.clouddn.com/";
 
+    public static final int REQUEST_VERIFY_CODE_INTERVAL = 5;
+
     public static String currentUserId;
     public static String token;
     public static long tokenTimestamp;
@@ -341,11 +343,19 @@ public class PPHelper {
                             currentUser.setNickname(ppFromString(s, "data.userInfo.nickname").getAsString());
                             currentUser.setGender(ppFromString(s, "data.userInfo.gender").getAsInt());
                             currentUser.setBirthday(ppFromString(s, "data.userInfo.birthday").getAsLong());
-                            currentUser.setHead(ppFromString(s, "data.userInfo.head").getAsString());
+
+                            String avatar = "default_avatar";
+                            if (!TextUtils.isEmpty(PPHelper.ppFromString(s, "data.userInfo.head", PPValueType.STRING).getAsString())) {
+                                avatar = PPHelper.ppFromString(s, "data.userInfo.head", PPValueType.STRING).getAsString();
+                            }
+
+                            currentUser.setHead(avatar);
                             currentUser.setBaiduApiUrl(ppFromString(s, "data.settings.geo.api").getAsString());
                             currentUser.setBaiduAkBrowser(tmpAk);
                             currentUser.setSocketHost(ppFromString(s, "data.settings.socket.host").getAsString());
                             currentUser.setSocketPort(ppFromString(s, "data.settings.socket.port").getAsInt());
+
+                            Log.v("pplog512", "1");
 
                             //pptodo get im_unread_count_int
                             RealmList<Pic> pics = currentUser.getPics();
@@ -364,10 +374,10 @@ public class PPHelper {
                             //设置baiduAk
                             baiduAk = tmpAk;
                             realm.commitTransaction();
-
+                            Log.v("pplog512", "2");
 
                         }
-
+                        Log.v("pplog512", "3");
                         PPJSONObject jBody1 = new PPJSONObject();
                         JsonArray fields = new JsonArray();
                         fields.add("follows");
@@ -385,7 +395,7 @@ public class PPHelper {
                                 .put("target", PPHelper.currentUserId);
 
                         final Observable<String> apiResult2 = PPRetrofit.getInstance().api("user.info", jBody2.getJSONObject());
-
+                        Log.v("pplog512", "4");
                         return Observable
                                 .zip(
                                         apiResult1, apiResult2, new BiFunction<String, String, String[]>() {
@@ -403,12 +413,15 @@ public class PPHelper {
                 .map(new Function<String[], String>() {
                     @Override
                     public String apply(String[] s) throws Exception {
-
+                        Log.v("pplog512", "5");
                         processMyProfile(s[0], s[1]);
                         Intent intent = new Intent(PPApplication.getContext(), new PPService().getClass());
                         PPApplication.getContext().startService(intent);
 
+                        Log.v("pplog512", "6");
                         networkConnectNeedToRefresh();
+
+                        Log.v("pplog512", "7");
                         return "OK";
                     }
                 });
@@ -1274,6 +1287,8 @@ public class PPHelper {
 
             realm.beginTransaction();
 
+            Log.v("pplog512", "5.1");
+
             MyProfile myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
 
             if (myProfile == null) {
@@ -1281,14 +1296,36 @@ public class PPHelper {
                 myProfile.setUserId(PPHelper.currentUserId);
             }
 
+            Log.v("pplog512", "5.2");
 
-            myProfile.setFollows(PPHelper.ppFromString(userStats, "data.follows").getAsInt());
-            myProfile.setFans(PPHelper.ppFromString(userStats, "data.fans").getAsInt());
-            myProfile.setFriends(PPHelper.ppFromString(userStats, "data.friends").getAsInt());
-            myProfile.setLikes(PPHelper.ppFromString(userStats, "data.momentBeLiked").getAsInt());
+            myProfile.setFollows(PPHelper.ppFromString(userStats, "data.follows", PPValueType.INT).getAsInt());
+
+            Log.v("pplog512", "5.3");
+
+            myProfile.setFans(PPHelper.ppFromString(userStats, "data.fans", PPValueType.INT).getAsInt());
+
+            Log.v("pplog512", "5.4");
+
+            myProfile.setFriends(PPHelper.ppFromString(userStats, "data.friends", PPValueType.INT).getAsInt());
+
+            Log.v("pplog512", "5.5");
+
+            myProfile.setLikes(PPHelper.ppFromString(userStats, "data.momentBeLiked", PPValueType.INT).getAsInt());
+
+            Log.v("pplog512", "5.6");
 
             myProfile.setNickname(PPHelper.ppFromString(userInfo, "data.profile.nickname").getAsString());
-            myProfile.setAvatar(PPHelper.ppFromString(userInfo, "data.profile.head").getAsString());
+
+            Log.v("pplog512", "5.7");
+
+            //pptodo 需要有默认头像路径
+            String avatar = "default_avatar";
+            if (!TextUtils.isEmpty(PPHelper.ppFromString(userInfo, "data.profile.head", PPValueType.STRING).getAsString())) {
+                avatar = PPHelper.ppFromString(userInfo, "data.profile.head", PPValueType.STRING).getAsString();
+            }
+            myProfile.setAvatar(avatar);
+
+            Log.v("pplog512", "5.8");
 
             realm.insertOrUpdate(myProfile);
 
@@ -1320,5 +1357,49 @@ public class PPHelper {
                         }, null);
             }
         });
+    }
+
+    public static String isPasswordValid(Context context, String password) {
+        String error = "";
+        if (TextUtils.isEmpty(password)) {
+            error = context.getString(R.string.error_field_required);
+        } else if (!Pattern.matches("\\w{6,12}", password.toString())) {
+            error = context.getString(R.string.error_invalid_password);
+        }
+
+        return error;
+    }
+
+    public static String isNicknameValid(Context context, String nickname) {
+        String error = "";
+        if (TextUtils.isEmpty(nickname)) {
+            error = context.getString(R.string.error_field_required);
+        } else if (!Pattern.matches("\\w{3,12}", nickname.toString())) {
+            error = context.getString(R.string.error_invalid_nickname);
+        }
+
+        return error;
+    }
+
+    public static String isPhoneValid(Context context, String phone) {
+        String error = "";
+        if (TextUtils.isEmpty(phone)) {
+            error = context.getString(R.string.error_field_required);
+        } else if (!Pattern.matches("\\d{11}", phone)) {
+            error = context.getString(R.string.error_invalid_phone);
+        }
+
+        return error;
+    }
+
+    public static String isVerifyCodeValid(Context context, String verifyCode) {
+        String error = "";
+        if (TextUtils.isEmpty(verifyCode)) {
+            error = context.getString(R.string.error_field_required);
+        } else if (!Pattern.matches("\\d{6}", verifyCode)) {
+            error = context.getString(R.string.error_invalid_verify_code);
+        }
+
+        return error;
     }
 }

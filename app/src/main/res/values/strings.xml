@@ -43,4 +43,20 @@
     <string name="meet">擦肩而过</string>
     <string name="collect">收集</string>
     <string name="be_collected">被收集</string>
+    <string name="set_password">设置密码*</string>
+    <string name="input_nickname">输入昵称*</string>
+    <string name="get_random">随机昵称</string>
+    <string name="male">男</string>
+    <string name="female">女</string>
+    <string name="action_sign_up">注册</string>
+    <string name="agreement">我同意遵守\\"迹伴用户协议\\"</string>
+    <string name="must_agree">请同意守则</string>
+    <string name="required">必填</string>
+    <string name="error_field_required">此项必填</string>
+    <string name="error_invalid_password">密码至少6位,最多12位</string>
+    <string name="error_invalid_nickname">昵称需要3-12个字符</string>
+    <string name="prompt_phone">手机号码*</string>
+    <string name="error_invalid_phone">手机号码格式不正确</string>
+    <string name="request">获取</string>
+    <string name="error_invalid_verify_code">验证码格式不正确</string>
 </resources>

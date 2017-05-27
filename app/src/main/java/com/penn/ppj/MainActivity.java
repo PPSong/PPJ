@@ -34,6 +34,7 @@ import com.jph.takephoto.app.TakePhoto;
 import com.jph.takephoto.app.TakePhotoFragmentActivity;
 import com.jph.takephoto.compress.CompressConfig;
 import com.jph.takephoto.model.TResult;
+import com.penn.ppj.messageEvent.MomentCreatedEvent;
 import com.penn.ppj.messageEvent.MomentDeleteEvent;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
@@ -130,20 +131,6 @@ public class MainActivity extends TakePhotoFragmentActivity
     private MyProfile myProfile;
 
     private Realm realm = Realm.getDefaultInstance();
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.v("pplog561", "requestCode:" + requestCode + ",resultCode:" + resultCode);
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CREATE_MOMENT && resultCode == RESULT_OK) {
-
-            Log.v("pplog580", "onActivityResult:" + data.getStringExtra("momentCreatingId"));
-
-            binding.mainViewPager.setCurrentItem(DASHBOARD);
-            dashboardFragment.binding.mainRecyclerView.scrollToPosition(0);
-            PPHelper.uploadMoment(data.getStringExtra("momentCreatingId"));
-        }
-    }
 
     @Override
     protected void onDestroy() {
@@ -321,6 +308,15 @@ public class MainActivity extends TakePhotoFragmentActivity
         PPHelper.removeMoment(event.id);
     }
 
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void MomentCreatedEvent(MomentCreatedEvent event) {
+        Log.v("pplog508", "MomentCreatedEvent:" + event.id);
+        binding.mainViewPager.setCurrentItem(DASHBOARD);
+        dashboardFragment.binding.mainRecyclerView.scrollToPosition(0);
+        PPHelper.uploadMoment(event.id);
+
+    }
+
     private void requestPermission(Activity activity) {
         // Here, thisActivity is the current activity
         if (ContextCompat.checkSelfPermission(activity,
@@ -458,7 +454,7 @@ public class MainActivity extends TakePhotoFragmentActivity
         }
 
         Intent intent = new Intent(this, CreateMomentActivity.class);
-        startActivityForResult(intent, CREATE_MOMENT);
+        startActivity(intent);
     }
 
     //-----ppTest-----

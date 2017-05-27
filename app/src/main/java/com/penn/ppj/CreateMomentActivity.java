@@ -22,6 +22,7 @@ import com.jph.takephoto.compress.CompressConfig;
 import com.jph.takephoto.model.TImage;
 import com.jph.takephoto.model.TResult;
 import com.penn.ppj.databinding.ActivityCreateMomentBinding;
+import com.penn.ppj.messageEvent.MomentCreatedEvent;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Moment;
@@ -215,6 +216,7 @@ public class CreateMomentActivity extends AppCompatActivity {
 //
 //        Log.v("pplog580", "momentCreatingId:" + momentCreating.getId());
 
+        EventBus.getDefault().post(new MomentCreatedEvent(momentCreating.getId()));
         finish();
     }
 }

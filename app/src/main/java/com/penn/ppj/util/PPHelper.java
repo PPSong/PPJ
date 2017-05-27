@@ -27,6 +27,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.github.pwittchen.reactivenetwork.library.rx2.Connectivity;
+import com.github.pwittchen.reactivenetwork.library.rx2.ReactiveNetwork;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -36,6 +38,7 @@ import com.penn.ppj.MomentDetailActivity;
 import com.penn.ppj.PPApplication;
 import com.penn.ppj.PPService;
 import com.penn.ppj.R;
+import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
@@ -46,6 +49,7 @@ import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.MyProfile;
 import com.penn.ppj.model.realm.Pic;
 import com.penn.ppj.model.realm.RelatedUser;
+import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
 import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.PicStatus;
@@ -57,6 +61,8 @@ import com.qiniu.android.storage.UploadManager;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Text;
 
@@ -79,8 +85,11 @@ import io.realm.RealmList;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
+import static android.R.attr.id;
 import static com.baidu.location.h.j.p;
 import static com.penn.ppj.PPApplication.getContext;
+import static com.penn.ppj.R.string.bePrivate;
+import static com.penn.ppj.R.string.moment;
 
 /**
  * Created by penn on 13/05/2017.
@@ -620,20 +629,9 @@ public class PPHelper {
     //包含所有网络获得链接后需要更新的事情
     public static void networkConnectNeedToRefresh() {
         //删除应该删除的记录
-        try (Realm realm = Realm.getDefaultInstance()) {
-            RealmResults<Moment> moments = realm.where(Moment.class).equalTo("deleted", true).findAll();
-            for (Moment moment : moments) {
-                removeMoment(moment.getId());
-            }
-
-            RealmResults<Comment> comments = realm.where(Comment.class).equalTo("deleted", true).findAll();
-            for (Comment comment : comments) {
-                removeComment(comment);
-            }
-        }
+        resumeDeleting();
 
         //我的moment
-
         long mostNewMomentCreateTime = 0;
         try (Realm realm = Realm.getDefaultInstance()) {
             RealmResults<Moment> moments = realm.where(Moment.class).findAllSorted("createTime", Sort.DESCENDING);
@@ -1136,6 +1134,208 @@ public class PPHelper {
         }
     }
 
+    public static void resumeUploading() {
+
+    }
+
+    public static void resumeDeleting() {
+        try (Realm realm = Realm.getDefaultInstance()) {
+            RealmResults<Moment> moments = realm.where(Moment.class).equalTo("deleted", true).findAll();
+            for (Moment moment : moments) {
+                removeMoment(moment.getId());
+            }
+
+            RealmResults<Comment> comments = realm.where(Comment.class).equalTo("deleted", true).findAll();
+            for (Comment comment : comments) {
+                removeComment(comment.getId(), comment.getMomentId());
+            }
+        }
+    }
+
+    public static void uploadMoment(String momentCreatingId) {
+        final String needUploadMomentId;
+        final byte[] imageData;
+        String address;
+        String geo;
+        String content;
+        long createTime;
+
+        try (Realm realm = Realm.getDefaultInstance()) {
+            MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", momentCreatingId).findFirst();
+
+            needUploadMomentId = momentCreating.getId();
+            imageData = momentCreating.getPic();
+            address = momentCreating.getAddress();
+            geo = momentCreating.getGeo();
+            content = momentCreating.getContent();
+            createTime = momentCreating.getCreateTime();
+
+            realm.beginTransaction();
+            //修改momentCreating放入Moment状态
+            momentCreating.setStatus(MomentStatus.LOCAL);
+
+            realm.commitTransaction();
+        }
+
+        //申请上传图片的token
+        final String key = needUploadMomentId + "_0";
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("type", "public")
+                .put("filename", key);
+
+        final Observable<String> requestToken = PPRetrofit.getInstance().api("system.generateUploadToken", jBody.getJSONObject());
+
+        //上传moment
+        JSONArray jsonArrayPics = new JSONArray();
+
+        jsonArrayPics.put(key);
+
+        PPJSONObject jBody1 = new PPJSONObject();
+        jBody1
+                .put("pics", jsonArrayPics)
+                .put("address", address)
+                .put("geo", geo)
+                .put("content", content)
+                .put("createTime", createTime);
+
+        final Observable<String> apiResult1 = PPRetrofit.getInstance()
+                .api("moment.publish", jBody1.getJSONObject());
+
+        requestToken
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .flatMap(
+                        new Function<String, ObservableSource<String>>() {
+                            @Override
+                            public ObservableSource<String> apply(@NonNull String s) throws Exception {
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception("ppError:" + ppWarn.msg + ":" + key);
+                                }
+                                String token = PPHelper.ppFromString(s, "data.token").getAsString();
+                                return PPHelper.uploadSingleImage(imageData, key, token);
+                            }
+                        }
+                )
+                .observeOn(Schedulers.io())
+                .flatMap(new Function<String, ObservableSource<String>>() {
+                    @Override
+                    public ObservableSource<String> apply(@NonNull String s) throws Exception {
+                        return apiResult1;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+
+                                Log.v("pplog", "publish ok:" + s);
+
+                                PPWarn ppWarn = ppWarning(s);
+                                if (ppWarn != null) {
+                                    throw new Exception("ppError:" + ppWarn.msg);
+                                }
+
+                                String uploadedMomentId = PPHelper.ppFromString(s, "data.id").getAsString();
+
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", needUploadMomentId).findFirst();
+
+                                    realm.beginTransaction();
+                                    //删除momentCreating
+                                    // momentCreating.setStatus(MomentStatus.NET);
+                                    momentCreating.deleteFromRealm();
+
+                                    realm.commitTransaction();
+
+                                    //通知更新本地Moment中对应moment
+                                    EventBus.getDefault().post(new MomentPublishEvent(uploadedMomentId));
+                                }
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", needUploadMomentId).findFirst();
+                                    Moment moment = realm.where(Moment.class).equalTo("key", needUploadMomentId).findFirst();
+
+                                    realm.beginTransaction();
+                                    //修改momentCreating放入Moment状态
+                                    momentCreating.setStatus(MomentStatus.FAILED);
+                                    moment.setStatus(MomentStatus.FAILED);
+
+                                    realm.commitTransaction();
+                                }
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
+    }
+
+    public static void uploadComment(Comment comment) {
+        try (Realm realm = Realm.getDefaultInstance()) {
+            Comment tmpComment = realm.where(Comment.class).equalTo("id", comment.getId()).findFirst();
+
+            realm.beginTransaction();
+            tmpComment.setStatus(CommentStatus.LOCAL);
+            realm.commitTransaction();
+        }
+
+        //发送comment
+        PPJSONObject jBody = new PPJSONObject();
+        jBody
+                .put("id", comment.getId())
+                .put("content", comment.getContent())
+                .put("refer", comment.getReferUserId())
+                .put("isPrivate", "" + comment.isBePrivate());
+
+        final Observable<String> apiResult = PPRetrofit.getInstance()
+                .api("moment.reply", jBody.getJSONObject());
+
+        apiResult
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<String>() {
+                            @Override
+                            public void accept(@NonNull String s) throws Exception {
+
+                                PPWarn ppWarn = PPHelper.ppWarning(s);
+
+                                if (ppWarn != null) {
+                                    throw new Exception(ppWarn.msg);
+                                }
+
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    Comment comment = realm.where(Comment.class).equalTo("id", id).findFirst();
+
+                                    realm.beginTransaction();
+                                    comment.setStatus(CommentStatus.NET);
+                                    realm.commitTransaction();
+                                }
+
+                            }
+                        },
+                        new Consumer<Throwable>() {
+                            @Override
+                            public void accept(@NonNull Throwable throwable) throws Exception {
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    Comment comment = realm.where(Comment.class).equalTo("id", id).findFirst();
+
+                                    realm.beginTransaction();
+                                    comment.setStatus(CommentStatus.FAILED);
+                                    realm.commitTransaction();
+                                }
+                                PPHelper.error(throwable.toString());
+                            }
+                        }
+                );
+    }
+
+
     public static void removeMoment(final String momentId) {
         PPJSONObject jBody = new PPJSONObject();
         jBody
@@ -1177,9 +1377,7 @@ public class PPHelper {
                 );
     }
 
-    public static void removeComment(final Comment comment) {
-        final String commentId = comment.getId();
-        final String momentId = comment.getMomentId();
+    public static void removeComment(final String commentId, final String momentId) {
 
         PPJSONObject jBody = new PPJSONObject();
         jBody
@@ -1216,7 +1414,7 @@ public class PPHelper {
                             @Override
                             public void accept(@NonNull Throwable throwable) throws Exception {
                                 PPHelper.error(throwable.toString());
-                                removeComment(comment);
+                                removeComment(commentId, momentId);
                             }
                         }
                 );

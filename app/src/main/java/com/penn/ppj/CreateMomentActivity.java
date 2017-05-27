@@ -1,5 +1,7 @@
 package com.penn.ppj;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.database.DatabaseUtils;
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
@@ -143,21 +145,18 @@ public class CreateMomentActivity extends AppCompatActivity {
     }
 
     private void setupBindingData() {
+
+        realm.beginTransaction();
+
+        MomentCreating newOne = new MomentCreating();
+        newOne.setId();
+        newOne.setStatus(MomentStatus.PREPARE);
+
+        realm.copyToRealm(newOne);
+
+        realm.commitTransaction();
+
         momentCreating = realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findFirst();
-        Log.v("pplog", "setupBindingData start");
-        if (momentCreating == null) {
-            realm.beginTransaction();
-
-            MomentCreating newOne = new MomentCreating();
-            newOne.setId();
-            newOne.setStatus(MomentStatus.PREPARE);
-
-            realm.copyToRealm(newOne);
-
-            realm.commitTransaction();
-
-            momentCreating = realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findFirst();
-        }
 
         momentCreating.addChangeListener(changeListener);
         binding.setData(momentCreating);
@@ -200,6 +199,7 @@ public class CreateMomentActivity extends AppCompatActivity {
 
         realm.beginTransaction();
 
+        momentCreating.setStatus(MomentStatus.LOCAL);
         realm.copyToRealm(moment);
 
         realm.commitTransaction();
@@ -208,7 +208,13 @@ public class CreateMomentActivity extends AppCompatActivity {
 
         Log.v("pplog", "time:" + (System.currentTimeMillis() - now));
 
-        setResult(RESULT_OK);
+//        Intent resultIntent = new Intent();
+//        resultIntent.putExtra("momentCreatingId", momentCreating.getId());
+//        Log.v("pplog566", "momentCreatingId:" + momentCreating.getId());
+//        setResult(Activity.RESULT_OK, resultIntent);
+//
+//        Log.v("pplog580", "momentCreatingId:" + momentCreating.getId());
+
         finish();
     }
 }

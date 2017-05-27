@@ -3,9 +3,11 @@ package com.penn.ppj;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -131,11 +133,15 @@ public class MainActivity extends TakePhotoFragmentActivity
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.v("pplog561", "requestCode:" + requestCode + ",resultCode:" + resultCode);
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CREATE_MOMENT && resultCode == RESULT_OK) {
+
+            Log.v("pplog580", "onActivityResult:" + data.getStringExtra("momentCreatingId"));
+
             binding.mainViewPager.setCurrentItem(DASHBOARD);
             dashboardFragment.binding.mainRecyclerView.scrollToPosition(0);
-            uploadMoment();
+            PPHelper.uploadMoment(data.getStringExtra("momentCreatingId"));
         }
     }
 
@@ -315,127 +321,6 @@ public class MainActivity extends TakePhotoFragmentActivity
         PPHelper.removeMoment(event.id);
     }
 
-    private void uploadMoment() {
-        final String needUploadMomentId;
-        final byte[] imageData;
-        String address;
-        String geo;
-        String content;
-        long createTime;
-
-        try (Realm realm = Realm.getDefaultInstance()) {
-            MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findFirst();
-
-            needUploadMomentId = momentCreating.getId();
-            imageData = momentCreating.getPic();
-            address = momentCreating.getAddress();
-            geo = momentCreating.getGeo();
-            content = momentCreating.getContent();
-            createTime = momentCreating.getCreateTime();
-
-            realm.beginTransaction();
-            //修改momentCreating放入Moment状态
-            momentCreating.setStatus(MomentStatus.LOCAL);
-
-            realm.commitTransaction();
-        }
-
-        //申请上传图片的token
-        final String key = needUploadMomentId + "_0";
-        PPJSONObject jBody = new PPJSONObject();
-        jBody
-                .put("type", "public")
-                .put("filename", key);
-
-        final Observable<String> requestToken = PPRetrofit.getInstance().api("system.generateUploadToken", jBody.getJSONObject());
-
-        //上传moment
-        JSONArray jsonArrayPics = new JSONArray();
-
-        jsonArrayPics.put(key);
-
-        PPJSONObject jBody1 = new PPJSONObject();
-        jBody1
-                .put("pics", jsonArrayPics)
-                .put("address", address)
-                .put("geo", geo)
-                .put("content", content)
-                .put("createTime", createTime);
-
-        final Observable<String> apiResult1 = PPRetrofit.getInstance()
-                .api("moment.publish", jBody1.getJSONObject());
-
-        requestToken
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .flatMap(
-                        new Function<String, ObservableSource<String>>() {
-                            @Override
-                            public ObservableSource<String> apply(@NonNull String s) throws Exception {
-                                PPWarn ppWarn = ppWarning(s);
-                                if (ppWarn != null) {
-                                    throw new Exception("ppError:" + ppWarn.msg + ":" + key);
-                                }
-                                String token = PPHelper.ppFromString(s, "data.token").getAsString();
-                                return PPHelper.uploadSingleImage(imageData, key, token);
-                            }
-                        }
-                )
-                .observeOn(Schedulers.io())
-                .flatMap(new Function<String, ObservableSource<String>>() {
-                    @Override
-                    public ObservableSource<String> apply(@NonNull String s) throws Exception {
-                        return apiResult1;
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        new Consumer<String>() {
-                            @Override
-                            public void accept(@NonNull String s) throws Exception {
-
-                                Log.v("pplog", "publish ok:" + s);
-
-                                PPWarn ppWarn = ppWarning(s);
-                                if (ppWarn != null) {
-                                    throw new Exception("ppError:" + ppWarn.msg);
-                                }
-
-                                String uploadedMomentId = PPHelper.ppFromString(s, "data.id").getAsString();
-
-                                try (Realm realm = Realm.getDefaultInstance()) {
-                                    MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", needUploadMomentId).findFirst();
-
-                                    realm.beginTransaction();
-                                    //删除momentCreating
-                                    // momentCreating.setStatus(MomentStatus.NET);
-                                    momentCreating.deleteFromRealm();
-
-                                    realm.commitTransaction();
-
-                                    //通知更新本地Moment中对应moment
-                                    EventBus.getDefault().post(new MomentPublishEvent(uploadedMomentId));
-                                }
-                            }
-                        },
-                        new Consumer<Throwable>() {
-                            @Override
-                            public void accept(@NonNull Throwable throwable) throws Exception {
-                                try (Realm realm = Realm.getDefaultInstance()) {
-                                    MomentCreating momentCreating = realm.where(MomentCreating.class).equalTo("id", needUploadMomentId).findFirst();
-
-                                    realm.beginTransaction();
-                                    //修改momentCreating放入Moment状态
-                                    momentCreating.setStatus(MomentStatus.FAILED);
-
-                                    realm.commitTransaction();
-                                }
-                                PPHelper.error(throwable.toString());
-                            }
-                        }
-                );
-    }
-
     private void requestPermission(Activity activity) {
         // Here, thisActivity is the current activity
         if (ContextCompat.checkSelfPermission(activity,
@@ -522,7 +407,7 @@ public class MainActivity extends TakePhotoFragmentActivity
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
-        drawer.closeDrawer(GravityCompat.END);
+        drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
@@ -559,10 +444,11 @@ public class MainActivity extends TakePhotoFragmentActivity
         try (Realm realm = Realm.getDefaultInstance()) {
             realm.beginTransaction();
 
-            realm.where(MomentCreating.class).findAll().deleteAllFromRealm();
+            realm.where(MomentCreating.class).equalTo("status", MomentStatus.PREPARE.toString()).findAll().deleteAllFromRealm();
 
             MomentCreating newOne = new MomentCreating();
             newOne.setId();
+            Log.v("pplog580", "newOneOne:" + newOne.getId());
             newOne.setStatus(MomentStatus.PREPARE);
             newOne.setPic(result.getImages().get(0).getCompressPath());
 
@@ -572,7 +458,7 @@ public class MainActivity extends TakePhotoFragmentActivity
         }
 
         Intent intent = new Intent(this, CreateMomentActivity.class);
-        startActivity(intent);
+        startActivityForResult(intent, CREATE_MOMENT);
     }
 
     //-----ppTest-----

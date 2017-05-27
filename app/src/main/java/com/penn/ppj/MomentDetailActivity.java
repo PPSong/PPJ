@@ -366,7 +366,7 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
 
                                 realm.commitTransaction();
                             }
-                            PPHelper.removeComment(comment);
+                            PPHelper.removeComment(commentId, momentId);
                             dialog.dismiss();
                             Log.v("pplog509", "finished");
                         }
@@ -678,6 +678,7 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
                         new Consumer<String>() {
                             @Override
                             public void accept(@NonNull String s) throws Exception {
+                                Log.v("pplog560", "likeOrUnlikeMoment:" + s);
                                 updateLocalMomentDetail(s);
                             }
                         },
@@ -699,7 +700,7 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
         long now = System.currentTimeMillis();
 
         MomentDetail momentDetail = realm.where(MomentDetail.class).equalTo("id", momentId).findFirst();
-        momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
+        momentDetail.setLiked(ppFromString(momentDetailString, "data.isLiked").getAsInt() == 1 ? true : false);
         momentDetail.setLastVisitTime(now);
 
         realm.commitTransaction();
@@ -836,6 +837,7 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
     }
 
     private void processMomentDetailAndComments(String momentDetailString, String commentsString) {
+        Log.v("pplog560", "processMomentDetailAndComments:" + momentDetailString);
         //构造comment detail和comments
         long now = System.currentTimeMillis();
 
@@ -846,12 +848,14 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
         momentDetail.setCity(ppFromString(momentDetailString, "data.location.city").getAsString());
         momentDetail.setUserId(ppFromString(momentDetailString, "data._creator.id").getAsString());
         momentDetail.setContent(ppFromString(momentDetailString, "data.content").getAsString());
-        momentDetail.setLiked(ppFromString(momentDetailString, "data.like").getAsInt() == 1 ? true : false);
+        momentDetail.setLiked(ppFromString(momentDetailString, "data.isLiked").getAsInt() == 1 ? true : false);
         momentDetail.setCreateTime(ppFromString(momentDetailString, "data.createTime").getAsLong());
         momentDetail.setPic(ppFromString(momentDetailString, "data.pics.0").getAsString());
         momentDetail.setAvatar(ppFromString(momentDetailString, "data._creator.head").getAsString());
         momentDetail.setNickname(ppFromString(momentDetailString, "data._creator.nickname").getAsString());
         momentDetail.setLastVisitTime(now);
+
+        Log.v("pplog560", "" + momentDetail.isLiked());
 
         JsonArray ja = ppFromString(commentsString, "data.list").getAsJsonArray();
 

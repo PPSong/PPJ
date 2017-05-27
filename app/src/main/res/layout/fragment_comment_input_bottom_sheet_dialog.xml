@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
+
         <variable
             name="data"
             type="com.penn.ppj.CommentInputBottomSheetDialogFragment.CommentViewModel" />
@@ -30,10 +31,12 @@
 
             <android.support.design.widget.TextInputEditText
                 android:id="@+id/content_text_input_edit_text"
-                android:text="@{data.content}"
-                android:hint="@{data.getHint()}"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:hint="@{data.getHint()}"
+                android:imeOptions="actionSend"
+                android:singleLine="true"
+                android:text="@{data.content}" />
 
         </android.support.design.widget.TextInputLayout>
 
@@ -43,8 +46,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:layout_marginLeft="8dp"
-            android:text="@string/bePrivate"
             android:checked="@{data.bePrivate}"
+            android:text="@string/bePrivate"
             app:layout_constraintBottom_toTopOf="@+id/send_button"
             app:layout_constraintLeft_toLeftOf="@+id/send_button" />
 
@@ -54,8 +57,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:layout_marginRight="8dp"
-            android:text="@string/send"
             android:enabled="@{data.validate()}"
+            android:text="@string/send"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 

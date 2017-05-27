@@ -131,4 +131,13 @@
         <item name="android:textSize">9sp</item>
     </style>
 
+    <style name="TextAppearance.Author.Title" parent="@style/TextAppearance.CommentAuthor">
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="Widget.Plaid.PlayerTitle">
+        <item name="android:textAppearance">@style/TextAppearance.Author.Title</item>
+        <!--<item name="lineHeightHint">28sp</item>-->
+    </style>
+
 </resources>

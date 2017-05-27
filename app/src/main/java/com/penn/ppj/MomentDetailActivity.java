@@ -204,9 +204,14 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
                 momentDetailHeadBinding.avatarCircleImageView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);
-                        intent.putExtra("userId", momentDetail.getUserId());
-                        startActivity(intent);
+                        if (momentDetail.getUserId() == PPHelper.currentUserId) {
+                            Intent intent = new Intent(MomentDetailActivity.this, MyProfileActivity.class);
+                            MomentDetailActivity.this.startActivity(intent);
+                        } else {
+                            Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);
+                            intent.putExtra("userId", momentDetail.getUserId());
+                            startActivity(intent);
+                        }
                     }
                 });
 
@@ -931,7 +936,7 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
     }
 
     private void commentTo(Comment comment) {
-        Log.v("pplog555", "commentTo:" + commentViewModel.targetUserId + "," +  comment.getUserId());
+        Log.v("pplog555", "commentTo:" + commentViewModel.targetUserId + "," + comment.getUserId());
         if (!commentViewModel.targetUserId.equals(comment.getUserId())) {
             resetComment();
             setTarget(comment);

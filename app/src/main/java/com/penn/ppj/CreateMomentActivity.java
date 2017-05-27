@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
 
 import com.jakewharton.rxbinding2.view.RxView;
 import com.jakewharton.rxbinding2.widget.RxTextView;
@@ -78,6 +80,20 @@ public class CreateMomentActivity extends TakePhotoActivity {
         setupBindingData();
 
         setup();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                View view = getCurrentFocus();
+                PPHelper.hideKeyboard(ev, view, this);//调用方法判断是否需要隐藏键盘
+                break;
+
+            default:
+                break;
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     @Override

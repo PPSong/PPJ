@@ -93,14 +93,12 @@ public class CommentInputBottomSheetDialogFragment extends BottomSheetDialogFrag
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String commentViewModelStr = getArguments().getString("commentViewModel");
-        Log.v("pplog555", "onCreate:" + commentViewModelStr);
+
         commentViewModel = new Gson().fromJson(commentViewModelStr, CommentViewModel.class);
-        Log.v("pplog555", "onCreate: commentViewModel:" + commentViewModel.content);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        Log.v("pplog555", "onCreateView:" + commentViewModel.content);
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_comment_input_bottom_sheet_dialog, container, false);
         binding.setData(commentViewModel);
 
@@ -169,8 +167,14 @@ public class CommentInputBottomSheetDialogFragment extends BottomSheetDialogFrag
         binding.contentTextInputEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                Log.v("pplog333", "onEditorAction");
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
+
+                if (actionId == EditorInfo.IME_ACTION_SEND) {
+
+                    if (TextUtils.isEmpty(commentViewModel.content)) {
+                        //do nothing
+                        return true;
+                    }
+
                     bottomSheetDialogFragmentListener.sendComment();
                     dismiss();
                     return true;

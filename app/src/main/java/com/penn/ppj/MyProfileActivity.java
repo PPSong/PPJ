@@ -185,6 +185,22 @@ public class MyProfileActivity extends TakePhotoFragmentActivity {
                         }
                 );
 
+        //back按钮监控
+        Observable<Object> backButtonObservable = RxView.clicks(binding.backImageButton)
+                .debounce(200, TimeUnit.MILLISECONDS);
+
+        backButtonObservable
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                finish();
+                            }
+                        }
+                );
+
+
         realm = Realm.getDefaultInstance();
 
         myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();

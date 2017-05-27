@@ -49,7 +49,7 @@
     <string name="male">男</string>
     <string name="female">女</string>
     <string name="action_sign_up">注册</string>
-    <string name="agreement">我同意遵守\\"迹伴用户协议\\"</string>
+    <string name="agreement">我同意遵守\"迹伴用户协议\"</string>
     <string name="must_agree">请同意守则</string>
     <string name="required">必填</string>
     <string name="error_field_required">此项必填</string>

@@ -1,5 +1,6 @@
 package com.penn.ppj.model.realm;
 
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -25,8 +26,35 @@ public class Comment extends RealmObject {
     private String avatar;
     private String content;
     private String status;
+    private String referUserId;
+    private String referNickname;
+    private boolean bePrivate;
     private long lastVisitTime;
     private boolean deleted;
+
+    public String getReferUserId() {
+        return referUserId;
+    }
+
+    public void setReferUserId(String referUserId) {
+        this.referUserId = referUserId;
+    }
+
+    public String getReferNickname() {
+        return referNickname;
+    }
+
+    public void setReferNickname(String referNickname) {
+        this.referNickname = referNickname;
+    }
+
+    public boolean isBePrivate() {
+        return bePrivate;
+    }
+
+    public void setBePrivate(boolean bePrivate) {
+        this.bePrivate = bePrivate;
+    }
 
     public boolean isDeleted() {
         return deleted;
@@ -93,7 +121,12 @@ public class Comment extends RealmObject {
     }
 
     public String getContent() {
-        return content;
+        String referStr = "";
+        if (!TextUtils.isEmpty(referNickname)) {
+            referStr = "@" + referNickname + ":";
+        }
+
+        return referStr + content;
     }
 
     public void setContent(String content) {

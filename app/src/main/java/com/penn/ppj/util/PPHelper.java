@@ -283,6 +283,7 @@ public class PPHelper {
                     public ObservableSource<String> apply(String s) throws Exception {
                         PPWarn ppWarn = ppWarning(s);
                         if (ppWarn != null) {
+                            Log.v("pplog535", "login exception");
                             throw new Exception(ppWarn.msg);
                         }
 
@@ -327,6 +328,7 @@ public class PPHelper {
                     public ObservableSource<String[]> apply(@NonNull String s) throws Exception {
                         PPWarn ppWarn = ppWarning(s);
                         if (ppWarn != null) {
+                            Log.v("pplog535", "startup exception");
                             throw new Exception(ppWarn.msg);
                         }
 

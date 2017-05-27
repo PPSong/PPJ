@@ -12,154 +12,117 @@
             type="com.penn.ppj.model.realm.MomentDetail" />
     </data>
 
-    <android.support.percent.PercentFrameLayout
-        android:id="@+id/main_percent_frame_layout"
+    <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/white">
+        android:layout_height="match_parent">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/main_recycler_view"
+        <android.support.percent.PercentFrameLayout
+            android:id="@+id/main_percent_frame_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingBottom="@dimen/comment_input_height" />
+            android:background="@android:color/white">
 
-        <ImageView
-            android:id="@+id/main_image_view"
-            android:background="@android:color/white"
-            android:scaleType="centerCrop"
-            app:imageUrl="@{data.pic}"
-            app:layout_aspectRatio="133%"
-            app:layout_widthPercent="100%" />
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/main_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-        <android.support.constraint.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/comment_input_height"
-            android:layout_gravity="bottom"
-            android:background="@color/light_grey"
-            android:elevation="16dp">
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/comment_avatar_circle_image_view"
-                android:layout_width="@dimen/avatar"
-                android:layout_height="@dimen/avatar"
-                android:layout_marginBottom="8dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="8dp"
-                android:padding="@dimen/avatar_padding"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <android.support.design.widget.TextInputLayout
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginBottom="8dp"
-                android:layout_marginLeft="8dp"
-                android:layout_marginRight="8dp"
-                android:layout_marginTop="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toRightOf="@+id/comment_avatar_circle_image_view"
-                app:layout_constraintRight_toLeftOf="@+id/send_comment_image_button"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <android.support.design.widget.TextInputEditText
-                    android:id="@+id/comment_text_input_edit_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionDone"
-                    android:inputType="text" />
-
-            </android.support.design.widget.TextInputLayout>
-
-            <ImageButton
-                android:id="@+id/send_comment_image_button"
-                android:layout_width="@dimen/button_height"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginBottom="8dp"
-                android:layout_marginRight="8dp"
-                android:layout_marginTop="8dp"
+            <FrameLayout
+                android:id="@+id/main_image_container_frame_layout"
                 android:background="@android:color/white"
-                android:padding="12dp"
+                app:layout_aspectRatio="133%"
+                app:layout_widthPercent="100%">
+
+                <ImageView
+                    android:id="@+id/main_image_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white"
+                    android:scaleType="centerCrop"
+                    app:imageUrl="@{data.pic}" />
+
+                <ToggleButton
+                    android:id="@+id/like_toggle_button"
+                    android:layout_width="@dimen/button_height"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_gravity="bottom|left"
+                    android:layout_margin="@dimen/common"
+                    android:background="@drawable/asl_fab_heart"
+                    android:checked="@{data.liked}"
+                    android:textOff=""
+                    android:textOn="" />
+            </FrameLayout>
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/comment_floating_action_button"
+                android:layout_width="@dimen/fab"
+                android:layout_height="@dimen/fab"
+                android:layout_gravity="end"
+                android:layout_marginEnd="@dimen/common"
                 android:src="@drawable/ic_chat_black_24dp"
-                android:tint="@android:color/darker_gray"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </android.support.constraint.ConstraintLayout>
-
-        <com.penn.ppj.ppWidget.FABToggle
-            android:id="@+id/like_fab_toggle"
-            android:layout_width="@dimen/fab"
-            android:layout_height="@dimen/fab"
-            android:layout_gravity="end"
-            android:layout_marginEnd="@dimen/common"
-            android:background="@drawable/fab_dribbble_fav"
-            android:checked="@{data.liked}"
-            android:elevation="9dp"
-            android:src="@drawable/asl_fab_heart"
-            android:stateListAnimator="@animator/raise"
-            android:visibility="invisible" />
-
-        <android.support.constraint.ConstraintLayout
-            android:id="@+id/toolbar_constraint_layout"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/ab_gradient_dark"
-            android:elevation="21dp"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/back_image_button"
-                android:layout_width="@android:dimen/app_icon_size"
-                android:layout_height="@android:dimen/app_icon_size"
-                android:layout_marginBottom="8dp"
-                android:layout_marginLeft="8dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_arrow_back"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent" />
-
-            <ImageButton
-                android:id="@+id/delete_moment_image_button"
-                android:layout_width="@android:dimen/app_icon_size"
-                android:layout_height="@android:dimen/app_icon_size"
-                android:layout_marginBottom="8dp"
-                android:layout_marginRight="8dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_delete_black_24dp"
                 android:tint="@android:color/white"
-                android:visibility="@{data.deletable()}"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintRight_toRightOf="parent" />
+                android:visibility="invisible"
+                app:backgroundTint="@color/dribbble" />
 
-        </android.support.constraint.ConstraintLayout>
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/toolbar_constraint_layout"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@drawable/ab_gradient_dark"
+                android:elevation="21dp"
+                android:orientation="horizontal">
 
-        <FrameLayout
-            android:id="@+id/progress_frame_layout"
-            android:background="@android:color/white"
-            android:elevation="21dp"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            >
+                <ImageButton
+                    android:id="@+id/back_image_button"
+                    android:layout_width="@android:dimen/app_icon_size"
+                    android:layout_height="@android:dimen/app_icon_size"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginLeft="8dp"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/ic_arrow_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent" />
 
-            <ImageButton
-                android:src="@drawable/ic_arrow_back_black_24dp"
-                android:background="@android:color/transparent"
-                android:layout_marginTop="32dp"
-                android:layout_marginLeft="16dp"
-                android:layout_width="@dimen/icon"
-                android:layout_height="@dimen/icon" />
+                <ImageButton
+                    android:id="@+id/delete_moment_image_button"
+                    android:layout_width="@android:dimen/app_icon_size"
+                    android:layout_height="@android:dimen/app_icon_size"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginRight="8dp"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/ic_delete_black_24dp"
+                    android:tint="@android:color/white"
+                    android:visibility="@{data.deletable()}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintRight_toRightOf="parent" />
 
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+            </android.support.constraint.ConstraintLayout>
 
-        </FrameLayout>
+            <FrameLayout
+                android:id="@+id/progress_frame_layout"
 
-    </android.support.percent.PercentFrameLayout>
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:elevation="21dp">
+
+                <ImageButton
+                    android:layout_width="@dimen/icon"
+                    android:layout_height="@dimen/icon"
+                    android:layout_marginLeft="16dp"
+                    android:layout_marginTop="32dp"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/ic_arrow_back_black_24dp" />
+
+                <ProgressBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center" />
+
+            </FrameLayout>
+
+        </android.support.percent.PercentFrameLayout>
+
+    </android.support.design.widget.CoordinatorLayout>
 
 </layout>
 

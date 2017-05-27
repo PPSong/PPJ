@@ -1,12 +1,14 @@
 package com.penn.ppj;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -18,7 +20,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -36,6 +40,7 @@ import com.penn.ppj.model.realm.MomentDetail;
 import com.penn.ppj.model.realm.UserHomePage;
 import com.penn.ppj.ppEnum.CommentStatus;
 import com.penn.ppj.ppEnum.MomentStatus;
+import com.penn.ppj.ppEnum.PPValueType;
 import com.penn.ppj.ppEnum.RelatedUserType;
 import com.penn.ppj.util.ImageViewerActivity;
 import com.penn.ppj.util.PPHelper;
@@ -67,6 +72,9 @@ import io.realm.Sort;
 import static android.R.attr.pointerIcon;
 import static android.R.attr.scrollY;
 import static com.baidu.location.h.j.C;
+import static com.baidu.location.h.j.o;
+import static com.baidu.location.h.j.v;
+import static com.penn.ppj.R.id.bottom_sheet1;
 import static com.penn.ppj.R.id.imageView;
 import static com.penn.ppj.R.string.moment;
 import static com.penn.ppj.util.PPHelper.calculateHeadHeight;
@@ -75,7 +83,7 @@ import static com.penn.ppj.util.PPHelper.hideKeyboard;
 import static com.penn.ppj.util.PPHelper.ppFromString;
 import static io.reactivex.Observable.zip;
 
-public class MomentDetailActivity extends AppCompatActivity {
+public class MomentDetailActivity extends AppCompatActivity implements CommentInputBottomSheetDialogFragment.BottomSheetDialogFragmentListener {
     private String momentId;
 
     private ActivityMomentDetailBinding binding;
@@ -98,12 +106,23 @@ public class MomentDetailActivity extends AppCompatActivity {
 
     private MomentDetailHeadBinding momentDetailHeadBinding;
 
+    private CommentInputBottomSheetDialogFragment.CommentViewModel commentViewModel;
+
     private int titleHeight;
     private int headPicHeight;
     private int headPicMinHeight;
     private int floatingButtonHalfHeight;
 
     private boolean likeButtonSetuped = false;
+
+    private BottomSheetBehavior mBottomSheetBehavior;
+
+    @Override
+    public void setCommentViewModel(CommentInputBottomSheetDialogFragment.CommentViewModel commentViewModel) {
+        Log.v("pplog555", "setCommentViewModel1:" + commentViewModel.content);
+        this.commentViewModel = commentViewModel;
+        Log.v("pplog555", "setCommentViewModel2:" + commentViewModel.content);
+    }
 
     interface OnItemClickListener {
         void onClick(Comment comment);
@@ -116,10 +135,8 @@ public class MomentDetailActivity extends AppCompatActivity {
             //由于第一个cell被head占了
             Comment comment = comments.get(position - 1);
 
-            if (comment.getStatus().equals(CommentStatus.NET)) {
-                Intent intent = new Intent(MomentDetailActivity.this, UserHomePageActivity.class);
-                intent.putExtra("userId", comment.getUserId());
-                startActivity(intent);
+            if (!comment.getUserId().equals(PPHelper.currentUserId)) {
+                commentTo(comment);
             }
         }
     };
@@ -235,23 +252,39 @@ public class MomentDetailActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                View view = getCurrentFocus();
-                PPHelper.hideKeyboard(ev, view, this);//调用方法判断是否需要隐藏键盘
-                break;
-
-            default:
-                break;
-        }
-        return super.dispatchTouchEvent(ev);
-    }
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent event) {
+//        switch (event.getAction()) {
+//            case MotionEvent.ACTION_DOWN:
+//                View view = binding.commentContainterConstraintLayout; //getCurrentFocus();
+//                //PPHelper.hideKeyboard(ev, view, this);//调用方法判断是否需要隐藏键盘
+//
+//                int[] location = {0, 0};
+//                view.getLocationInWindow(location);
+//                int left = location[0], top = location[1], right = left
+//                        + view.getWidth(), bootom = top + view.getHeight();
+//                // 判断焦点位置坐标是否在空间内，如果位置在控件外，则隐藏键盘
+//                if (event.getRawX() < left || event.getRawX() > right
+//                        || event.getY() < top || event.getRawY() > bootom) {
+//                    // 隐藏键盘
+//                    hideCommentInput();
+//                    //取消焦点
+//                    //view.clearFocus();
+//                }
+//
+//                break;
+//
+//            default:
+//                break;
+//        }
+//        return super.dispatchTouchEvent(event);
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
         realm = Realm.getDefaultInstance();
 
@@ -373,17 +406,17 @@ public class MomentDetailActivity extends AppCompatActivity {
                 int imageBan = headPicHeight - headMinHeadHeight;
 
                 if (Math.abs(scrollY) < fabBan) {
-                    binding.likeFabToggle.setTranslationY(scrollY);
+                    binding.commentFloatingActionButton.setTranslationY(scrollY);
                 } else {
-                    binding.likeFabToggle.setTranslationY(-fabBan);
+                    binding.commentFloatingActionButton.setTranslationY(-fabBan);
                 }
 
                 if (Math.abs(scrollY) < imageBan) {
-                    binding.mainImageView.setElevation(0);
-                    binding.mainImageView.setTranslationY(scrollY);
+                    binding.mainImageContainerFrameLayout.setElevation(0);
+                    binding.mainImageContainerFrameLayout.setTranslationY(scrollY);
                 } else {
-                    binding.mainImageView.setElevation(16);
-                    binding.mainImageView.setTranslationY(-imageBan);
+                    binding.mainImageContainerFrameLayout.setElevation(16);
+                    binding.mainImageContainerFrameLayout.setTranslationY(-imageBan);
                 }
             }
         });
@@ -462,58 +495,41 @@ public class MomentDetailActivity extends AppCompatActivity {
                         );
 
         //like按钮监控
-        Observable<Object> likeButtonObservable = RxView.clicks(binding.likeFabToggle)
+        Observable<Object> likeButtonObservable = RxView.clicks(binding.likeToggleButton)
                 .debounce(200, TimeUnit.MILLISECONDS);
 
         likeButtonObservable
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                likeOrUnlikeMoment(binding.likeToggleButton.isChecked());
+                            }
+                        }
+                );
 
-                        observeOn(AndroidSchedulers.mainThread())
-                .
 
-                        subscribe(
-                                new Consumer<Object>() {
-                                    public void accept(Object o) {
-                                        boolean liked = binding.likeFabToggle.isChecked();
-                                        binding.likeFabToggle.setChecked(!liked);
-                                        likeOrUnlikeMoment(!liked);
-                                    }
-                                }
-                        );
-
-        //send comment按钮监控
-        Observable<Object> commentButtonObservable = RxView.clicks(binding.sendCommentImageButton)
+        //showComment按钮监控
+        Observable<Object> showCommentInputButtonObservable = RxView.clicks(binding.commentFloatingActionButton)
                 .debounce(200, TimeUnit.MILLISECONDS);
 
-        commentButtonObservable
+        showCommentInputButtonObservable
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .
-
-                        observeOn(AndroidSchedulers.mainThread())
-                .
-
-                        subscribe(
-                                new Consumer<Object>() {
-                                    public void accept(Object o) {
-                                        sendComment();
-                                    }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Consumer<Object>() {
+                            public void accept(Object o) {
+                                if (commentViewModel.targetUserId != "") {
+                                    resetComment();
+                                    setTarget(null);
                                 }
-                        );
+                                showCommentInput();
+                            }
+                        }
+                );
 
-        binding.commentTextInputEditText.setOnEditorActionListener(new EditText.OnEditorActionListener()
-
-        {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                Log.v("pplog333", "onEditorAction");
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    sendComment();
-                    return true;
-                }
-                return false;
-            }
-        });
+        commentViewModel = new CommentInputBottomSheetDialogFragment.CommentViewModel();
 
         //由于momentDetailHeadBinding是在onCreateViewHolder中初始化的, 怀疑 ppAdapter = new PPAdapter(comments);是个异步操作
         //这里不用延时的话会导致momentDetailHeadBinding null错误
@@ -526,20 +542,6 @@ public class MomentDetailActivity extends AppCompatActivity {
                                                   }
                                               });
 
-        //容错 currentUserAvatar为空
-        if (TextUtils.isEmpty(PPHelper.currentUserAvatar))
-
-        {
-            Log.v("pplog", "currentUserAvatar不应该为空");
-            return;
-        }
-
-        Picasso.with(this).
-
-                load(PPHelper.get80ImageUrl(PPHelper.currentUserAvatar)).
-
-                into(binding.commentAvatarCircleImageView);
-
         binding.mainImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -548,12 +550,8 @@ public class MomentDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void sendComment() {
-        String content = binding.commentTextInputEditText.getText().toString();
-        if (TextUtils.isEmpty(content)) {
-            return;
-        }
-
+    @Override
+    public void sendComment() {
         //插入到本地数据库
         final long now = System.currentTimeMillis();
 
@@ -564,7 +562,10 @@ public class MomentDetailActivity extends AppCompatActivity {
         comment.setCreateTime(now);
         comment.setNickname(PPHelper.currentUserNickname);
         comment.setAvatar(PPHelper.currentUserAvatar);
-        comment.setContent(content);
+        comment.setContent(commentViewModel.content);
+
+        comment.setBePrivate(commentViewModel.bePrivate);
+
         comment.setStatus(CommentStatus.LOCAL);
         comment.setLastVisitTime(now);
 
@@ -574,18 +575,15 @@ public class MomentDetailActivity extends AppCompatActivity {
 
         realm.commitTransaction();
 
-        //清空输入框
-        binding.commentTextInputEditText.setText("");
-        binding.commentTextInputEditText.clearFocus();
         binding.mainRecyclerView.smoothScrollToPosition(0);
-        PPHelper.hideKeyboard(this);
 
         //发送comment
         PPJSONObject jBody = new PPJSONObject();
         jBody
                 .put("id", momentId)
-                .put("content", content)
-                .put("isPrivate", "false");
+                .put("content", commentViewModel.content)
+                .put("refer", commentViewModel.targetUserId)
+                .put("isPrivate", "" + commentViewModel.bePrivate);
 
         final Observable<String> apiResult = PPRetrofit.getInstance()
                 .api("moment.reply", jBody.getJSONObject());
@@ -626,6 +624,8 @@ public class MomentDetailActivity extends AppCompatActivity {
                             }
                         }
                 );
+
+        resetComment();
     }
 
     @Override
@@ -740,11 +740,11 @@ public class MomentDetailActivity extends AppCompatActivity {
         titleHeight = momentDetailHeadBinding.contentTextView.getHeight();
         headPicHeight = calculateHeadHeight(this);
         headPicMinHeight = PPHelper.calculateHeadMinHeight(this);
-        floatingButtonHalfHeight = binding.likeFabToggle.getHeight() / 2;
+        floatingButtonHalfHeight = binding.commentFloatingActionButton.getHeight() / 2;
 
         likeButtonSetuped = true;
 
-        PPHelper.likeButtonAppear(this, binding.likeFabToggle, titleHeight + headPicHeight - floatingButtonHalfHeight);
+        PPHelper.likeButtonAppear(this, binding.commentFloatingActionButton, titleHeight + headPicHeight - floatingButtonHalfHeight);
     }
 
     private void getMomentDetail() {
@@ -875,6 +875,9 @@ public class MomentDetailActivity extends AppCompatActivity {
                 comment.setNickname(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.nickname").getAsString());
                 comment.setAvatar(PPHelper.ppFromString(commentsString, "data.list." + i + "._creator.head").getAsString());
                 comment.setStatus(CommentStatus.NET);
+                comment.setReferUserId(PPHelper.ppFromString(commentsString, "data.list." + i + ".refer.id", PPValueType.STRING).getAsString());
+                comment.setReferNickname(PPHelper.ppFromString(commentsString, "data.list." + i + ".refer.nickname", PPValueType.STRING).getAsString());
+                comment.setBePrivate(PPHelper.ppFromString(commentsString, "data.list." + i + ".isPrivate").getAsBoolean());
                 comment.setLastVisitTime(now);
                 realm.insertOrUpdate(comment);
             }
@@ -886,5 +889,53 @@ public class MomentDetailActivity extends AppCompatActivity {
 
             realm.commitTransaction();
         }
+    }
+
+    private void setTarget(Comment comment) {
+        if (comment != null) {
+            commentViewModel.targetUserId = comment.getUserId();
+            commentViewModel.targetNickname = comment.getNickname();
+//
+//            referUserId = comment.getUserId();
+//            binding.contentTextInputEditText.setHint("@" + comment.getNickname());
+        } else {
+            commentViewModel.targetUserId = "";
+            commentViewModel.targetNickname = "";
+
+//            referUserId = "";
+//            binding.contentTextInputEditText.setHint("");
+        }
+    }
+
+    private void resetComment() {
+        commentViewModel.reset();
+
+//        referUserId = "";
+//        binding.contentTextInputEditText.setText("");
+//        binding.privateCheckBox.setChecked(false);
+//        binding.contentTextInputEditText.setHint("");
+    }
+
+//    private void hideCommentInput() {
+//        Log.v("pplog533", "hideCommentInput");
+//        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+//        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//        imm.hideSoftInputFromWindow(binding.contentTextInputEditText.getWindowToken(), 0);
+//    }
+
+    private void showCommentInput() {
+        Log.v("pplog555", "setCommentViewMode3:" + commentViewModel.content + "," + commentViewModel.targetUserId + "," + commentViewModel.targetNickname);
+        CommentInputBottomSheetDialogFragment commentInputBottomSheetDialogFragment = CommentInputBottomSheetDialogFragment.newInstance(commentViewModel);
+        commentInputBottomSheetDialogFragment.setBottomSheetDialogFragmentListener(this);
+        commentInputBottomSheetDialogFragment.show(getSupportFragmentManager(), "Dialog");
+    }
+
+    private void commentTo(Comment comment) {
+        Log.v("pplog555", "commentTo:" + commentViewModel.targetUserId + "," +  comment.getUserId());
+        if (!commentViewModel.targetUserId.equals(comment.getUserId())) {
+            resetComment();
+            setTarget(comment);
+        }
+        showCommentInput();
     }
 }

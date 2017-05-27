@@ -50,7 +50,7 @@ import io.realm.RealmModel;
 
 import static com.jakewharton.rxbinding2.widget.RxTextView.textChanges;
 
-public class CreateMomentActivity extends TakePhotoActivity {
+public class CreateMomentActivity extends AppCompatActivity {
 
     private ActivityCreateMomentBinding binding;
     private Realm realm;
@@ -61,8 +61,6 @@ public class CreateMomentActivity extends TakePhotoActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_create_moment);
-
-        binding.setData(momentCreating);
 
         changeListener = new RealmChangeListener<MomentCreating>() {
             @Override
@@ -103,19 +101,6 @@ public class CreateMomentActivity extends TakePhotoActivity {
     }
 
     private void setup() {
-        //拍照按钮监控
-        Observable<Object> takePhotoButtonObservable = RxView.clicks(binding.takePhotoImageButton)
-                .debounce(200, TimeUnit.MILLISECONDS);
-
-        takePhotoButtonObservable
-                .subscribe(
-                        new Consumer<Object>() {
-                            public void accept(Object o) {
-                                takePhoto();
-                            }
-                        }
-                );
-
         //发布按钮监控
         Observable<Object> publishButtonObservable = RxView.clicks(binding.publishButton)
                 .debounce(200, TimeUnit.MILLISECONDS);
@@ -185,37 +170,6 @@ public class CreateMomentActivity extends TakePhotoActivity {
         momentCreating.setAddress(PPHelper.getLatestAddress());
         realm.commitTransaction();
         //pptodo use baidu api to get real address
-    }
-
-    private void takePhoto() {
-        File file = new File(Environment.getExternalStorageDirectory(), "/temp/" + "tmp.jpg");
-        if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
-        Uri imageUri = Uri.fromFile(file);
-
-        CompressConfig config = new CompressConfig.Builder()
-                .setMaxSize(1024 * 1024)
-                .setMaxPixel(1024)
-                .create();
-
-        TakePhoto takePhoto = getTakePhoto();
-
-        takePhoto.onEnableCompress(config, true);
-
-        takePhoto.onPickFromCapture(imageUri);
-    }
-
-    @Override
-    public void takeFail(TResult result, String msg) {
-        PPHelper.error(msg);
-    }
-
-    @Override
-    public void takeSuccess(TResult result) {
-        super.takeSuccess(result);
-
-        realm.beginTransaction();
-        momentCreating.setPic(result.getImages().get(0).getCompressPath());
-        realm.commitTransaction();
     }
 
     private void validatePublish() {

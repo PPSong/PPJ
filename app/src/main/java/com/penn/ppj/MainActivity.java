@@ -6,8 +6,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -26,6 +28,10 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.jph.takephoto.app.TakePhoto;
+import com.jph.takephoto.app.TakePhotoFragmentActivity;
+import com.jph.takephoto.compress.CompressConfig;
+import com.jph.takephoto.model.TResult;
 import com.penn.ppj.messageEvent.MomentDeleteEvent;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
 import com.penn.ppj.messageEvent.ToggleToolBarEvent;
@@ -60,6 +66,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 
 
@@ -80,9 +87,11 @@ import io.realm.RealmChangeListener;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
 import io.realm.RealmModel;
+import io.realm.RealmResults;
 
 import static android.R.attr.breadCrumbShortTitle;
 import static android.R.attr.key;
+import static android.app.Activity.RESULT_OK;
 import static android.os.Build.VERSION_CODES.M;
 import static com.penn.ppj.R.id.item_touch_helper_previous_elevation;
 import static com.penn.ppj.R.id.main_nav_view;
@@ -93,7 +102,7 @@ import static com.penn.ppj.util.PPHelper.ppWarning;
 import static com.penn.ppj.util.PPHelper.uploadSingleImage;
 import static com.penn.ppj.util.PPRetrofit.authBody;
 
-public class MainActivity extends AppCompatActivity
+public class MainActivity extends TakePhotoFragmentActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final int DASHBOARD = 0;
@@ -159,12 +168,22 @@ public class MainActivity extends AppCompatActivity
 
         binding.mainToolbar.setPadding(0, PPHelper.getStatusBarHeight(this), 0, 0);
 
-        setSupportActionBar(binding.mainToolbar);
+        //setSupportActionBar(binding.mainToolbar);
 
-        binding.mainFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+        binding.cameraFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                createMoment();
+                binding.mainFloatingActionMenu.close(true);
+                takePhoto(true);
+            }
+        });
+
+        binding.photoFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                binding.mainFloatingActionMenu.close(true);
+                takePhoto(false);
+
             }
         });
 
@@ -177,8 +196,8 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(main_nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        View hView =  navigationView.getHeaderView(0);
-        final ImageView avatarImageView = (ImageView)hView.findViewById(R.id.imageView);
+        View hView = navigationView.getHeaderView(0);
+        final ImageView avatarImageView = (ImageView) hView.findViewById(R.id.imageView);
 
         myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
         myProfile.addChangeListener(new RealmChangeListener<MyProfile>() {
@@ -471,11 +490,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void createMoment() {
-        Intent intent = new Intent(this, CreateMomentActivity.class);
-        startActivityForResult(intent, CREATE_MOMENT);
-    }
-
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
@@ -510,6 +524,55 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         drawer.closeDrawer(GravityCompat.END);
         return true;
+    }
+
+    private void takePhoto(boolean camera) {
+        File file = new File(Environment.getExternalStorageDirectory(), "/temp/" + "tmp.jpg");
+        if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
+        Uri imageUri = Uri.fromFile(file);
+
+        CompressConfig config = new CompressConfig.Builder()
+                .setMaxSize(1024 * 1024)
+                .setMaxPixel(1024)
+                .create();
+
+        TakePhoto takePhoto = getTakePhoto();
+
+        takePhoto.onEnableCompress(config, true);
+
+        if (camera) {
+            takePhoto.onPickFromCapture(imageUri);
+        } else {
+            takePhoto.onPickFromGallery();
+        }
+    }
+
+    @Override
+    public void takeFail(TResult result, String msg) {
+        PPHelper.error(msg);
+    }
+
+    @Override
+    public void takeSuccess(TResult result) {
+        super.takeSuccess(result);
+
+        try (Realm realm = Realm.getDefaultInstance()) {
+            realm.beginTransaction();
+
+            realm.where(MomentCreating.class).findAll().deleteAllFromRealm();
+
+            MomentCreating newOne = new MomentCreating();
+            newOne.setId();
+            newOne.setStatus(MomentStatus.PREPARE);
+            newOne.setPic(result.getImages().get(0).getCompressPath());
+
+            realm.copyToRealm(newOne);
+
+            realm.commitTransaction();
+        }
+
+        Intent intent = new Intent(this, CreateMomentActivity.class);
+        startActivity(intent);
     }
 
     //-----ppTest-----

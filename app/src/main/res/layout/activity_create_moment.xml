@@ -14,31 +14,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingTop="48dp"
         android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/create_moment" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/take_photo_image_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_photo_camera_black_24dp" />
-
-            <ImageButton
-                android:id="@+id/choose_pic_image_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_collections_black_24dp" />
-
-        </LinearLayout>
 
         <android.support.design.widget.TextInputLayout
             android:id="@+id/content_text_input_layout"
@@ -66,12 +43,12 @@
 
         </android.support.percent.PercentFrameLayout>
 
-        <ImageView
-            android:id="@+id/map_image_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            app:mapImageUrl="@{data.geo}" />
+        <!--<ImageView-->
+            <!--android:id="@+id/map_image_view"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="center"-->
+            <!--app:mapImageUrl="@{data.geo}" />-->
 
         <LinearLayout
             android:layout_width="match_parent"

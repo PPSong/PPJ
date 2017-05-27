@@ -75,4 +75,6 @@ dependencies {
     compile 'com.github.jonasrottmann.realm-browser:realm-browser:develop-SNAPSHOT'
     compile 'com.nshmura:snappyimageviewer:1.1.0'
     testCompile 'junit:junit:4.12'
+
+    compile 'com.github.clans:fab:1.6.4'
 }

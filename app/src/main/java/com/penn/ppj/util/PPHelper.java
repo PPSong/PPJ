@@ -131,6 +131,11 @@ public class PPHelper {
 
     private static UploadManager uploadManager = new UploadManager(config);
 
+    public static RealmConfiguration realmDefaultConfig = new RealmConfiguration.Builder()
+            .deleteRealmIfMigrationNeeded()
+            .name("default.realm")
+            .build();
+
     public static void clear() {
         currentUserId = null;
         token = null;
@@ -263,7 +268,6 @@ public class PPHelper {
     }
 
     public static void initRealm(Context context, String phone) {
-        Realm.init(context);
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
                 .name(phone + ".realm")

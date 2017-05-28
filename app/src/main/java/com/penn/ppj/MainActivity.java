@@ -391,6 +391,9 @@ public class MainActivity extends TakePhotoFragmentActivity
         if (id == R.id.test) {
             // Handle the camera action
             startRealmModelsActivity();
+        } else if (id == R.id.test2) {
+            // Handle the camera action
+            startRealmModelsActivity2();
         } else if (id == R.id.dashboard) {
             binding.mainViewPager.setCurrentItem(DASHBOARD);
         } else if (id == R.id.nearby) {
@@ -463,5 +466,9 @@ public class MainActivity extends TakePhotoFragmentActivity
         RealmConfiguration configuration = realm.getConfiguration();
         realm.close();
         RealmBrowser.startRealmModelsActivity(this, configuration);
+    }
+
+    private void startRealmModelsActivity2() {
+        RealmBrowser.startRealmModelsActivity(this, PPHelper.realmDefaultConfig);
     }
 }

@@ -104,7 +104,8 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
         View view = binding.getRoot();
         //end common
 
-        realm = Realm.getDefaultInstance();
+        //realm = Realm.getDefaultInstance();
+        realm = Realm.getInstance(PPHelper.realmDefaultConfig);
 
         data = realm.where(NearbyMoment.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
@@ -177,7 +178,7 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     };
 
     private boolean processMoment(String s, boolean refresh) {
-        try (Realm realm = Realm.getDefaultInstance()) {
+        try (Realm realm = Realm.getInstance(PPHelper.realmDefaultConfig)) {
             realm.beginTransaction();
 
             if (refresh) {

@@ -7,6 +7,10 @@
             android:icon="@drawable/ic_menu_camera"
             android:title="Import" />
         <item
+            android:id="@+id/test2"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="NearbyDB" />
+        <item
             android:id="@+id/dashboard"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/dashboard" />

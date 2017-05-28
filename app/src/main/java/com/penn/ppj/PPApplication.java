@@ -40,6 +40,8 @@ public class PPApplication extends Application {
         super.onCreate();
         appContext = this;
 
+        Realm.init(appContext);
+
         mLocationClient = new LocationClient(getApplicationContext());
         //声明LocationClient类
         mLocationClient.registerLocationListener(myListener);

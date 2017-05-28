@@ -11,11 +11,25 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:elevation="1dp"
             android:scrollbarStyle="outsideOverlay"
             android:scrollbars="vertical">
 
         </android.support.v7.widget.RecyclerView>
+
+        <FrameLayout
+            android:id="@+id/empty_frame_layout"
+            android:visibility="visible"
+            android:background="@color/background_dark"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:text="@string/empty"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </FrameLayout>
 
     </FrameLayout>
 

@@ -88,8 +88,6 @@ public class NotificationFragment extends Fragment {
         data = realm.where(Message.class).findAllSorted("createTime", Sort.DESCENDING);
         data.addChangeListener(changeListener);
 
-//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
-
         scrollDirection
                 .distinctUntilChanged()
                 .debounce(200, TimeUnit.MILLISECONDS)
@@ -104,6 +102,30 @@ public class NotificationFragment extends Fragment {
                     }
                 });
 
+        if (!PPHelper.isLogin()) {
+            binding.emptyFrameLayout.setVisibility(View.VISIBLE);
+        } else {
+            setupForIsLogin();
+        }
+
+        return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        realm.close();
+        super.onDestroyView();
+    }
+
+    public void setupForIsLogin() {
+
+        binding.emptyFrameLayout.setVisibility(View.INVISIBLE);
+
+        realm = Realm.getDefaultInstance();
+
+        data = realm.where(Message.class).findAllSorted("createTime", Sort.DESCENDING);
+        data.addChangeListener(changeListener);
+
         binding.mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -117,25 +139,21 @@ public class NotificationFragment extends Fragment {
             }
         });
 
-//        binding.mainRecyclerView.setPadding(0, PPHelper.getStatusBarAddActionBarHeight(getContext()), 0, 0);
-
-        setup();
-
-        return view;
-    }
-
-    @Override
-    public void onDestroyView() {
-        realm.close();
-        super.onDestroyView();
-    }
-
-    private void setup() {
         linearLayoutManager = new LinearLayoutManager(getContext());
         binding.mainRecyclerView.setLayoutManager(linearLayoutManager);
 
         ppAdapter = new PPAdapter(data);
         binding.mainRecyclerView.setAdapter(ppAdapter);
+    }
+
+    public void setupForLogout() {
+        realm.close();
+        data.removeAllChangeListeners();
+        data = null;
+
+        binding.mainRecyclerView.clearOnScrollListeners();
+        binding.emptyFrameLayout.setVisibility(View.VISIBLE);
+        Log.v("pplog561", "setupForLogout");
     }
 
     private void goMessageDetail(Message message) {

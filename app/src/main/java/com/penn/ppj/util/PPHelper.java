@@ -39,6 +39,8 @@ import com.penn.ppj.PPApplication;
 import com.penn.ppj.PPService;
 import com.penn.ppj.R;
 import com.penn.ppj.messageEvent.MomentPublishEvent;
+import com.penn.ppj.messageEvent.UserLoginEvent;
+import com.penn.ppj.messageEvent.UserLogoutEvent;
 import com.penn.ppj.model.Geo;
 import com.penn.ppj.model.realm.Comment;
 import com.penn.ppj.model.realm.CurrentUser;
@@ -150,8 +152,8 @@ public class PPHelper {
         CurUser.clear();
         PPSocketSingleton.close();
         PPApplication.getContext().stopService(new Intent(PPApplication.getContext(), PPService.class));
-        Intent intent = new Intent(PPApplication.getContext(), LoginActivity.class);
-        PPApplication.getContext().startActivity(intent);
+//        Intent intent = new Intent(PPApplication.getContext(), LoginActivity.class);
+//        PPApplication.getContext().startActivity(intent);
     }
 
     public static int getStatusBarAddActionBarHeight(Context context) {
@@ -1605,5 +1607,17 @@ public class PPHelper {
         }
 
         return error;
+    }
+
+    public static boolean isLogin() {
+        return !TextUtils.isEmpty(currentUserId);
+    }
+
+    public static void noticeLogin() {
+        EventBus.getDefault().post(new UserLoginEvent());
+    }
+
+    public static void noticeLogout() {
+        EventBus.getDefault().post(new UserLogoutEvent());
     }
 }

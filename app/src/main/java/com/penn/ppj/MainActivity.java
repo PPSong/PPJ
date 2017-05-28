@@ -16,6 +16,7 @@ import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -192,27 +193,30 @@ public class MainActivity extends TakePhotoFragmentActivity
         View hView = navigationView.getHeaderView(0);
         final ImageView avatarImageView = (ImageView) hView.findViewById(R.id.imageView);
 
-        myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
-        myProfile.addChangeListener(new RealmChangeListener<MyProfile>() {
-            @Override
-            public void onChange(MyProfile element) {
-                Picasso.with(MainActivity.this)
-                        .load(PPHelper.get80ImageUrl(element.getAvatar()))
-                        .into(avatarImageView);
-            }
-        });
+        if (!TextUtils.isEmpty(PPHelper.currentUserId));
+        {
+            myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
+            myProfile.addChangeListener(new RealmChangeListener<MyProfile>() {
+                @Override
+                public void onChange(MyProfile element) {
+                    Picasso.with(MainActivity.this)
+                            .load(PPHelper.get80ImageUrl(element.getAvatar()))
+                            .into(avatarImageView);
+                }
+            });
 
-        Picasso.with(this)
-                .load(PPHelper.get80ImageUrl(currentUserAvatar))
-                .into(avatarImageView);
+            Picasso.with(this)
+                    .load(PPHelper.get80ImageUrl(currentUserAvatar))
+                    .into(avatarImageView);
 
-        avatarImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, MyProfileActivity.class);
-                MainActivity.this.startActivity(intent);
-            }
-        });
+            avatarImageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(MainActivity.this, MyProfileActivity.class);
+                    MainActivity.this.startActivity(intent);
+                }
+            });
+        }
 
         PPPagerAdapter adapter = new PPPagerAdapter(getSupportFragmentManager());
         dashboardFragment = new DashboardFragment();
@@ -308,6 +312,20 @@ public class MainActivity extends TakePhotoFragmentActivity
         PPHelper.removeMoment(event.id);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void UserLoginEvent(UserLoginEvent event) {
+        Log.v("pplog508", "UserLoginEvent:");
+        dashboardFragment.setupForIsLogin();
+        notificationFragment.setupForIsLogin();
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void UserLogoutEvent(UserLogoutEvent event) {
+        Log.v("pplog508", "UserLogoutEvent:");
+        dashboardFragment.setupForLogout();
+        notificationFragment.setupForLogout();
+    }
+
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void MomentCreatedEvent(MomentCreatedEvent event) {
         Log.v("pplog508", "MomentCreatedEvent:" + event.id);
@@ -401,8 +419,13 @@ public class MainActivity extends TakePhotoFragmentActivity
         } else if (id == R.id.notification) {
             binding.mainViewPager.setCurrentItem(NOTIFICATION);
         } else if (id == R.id.exit) {
-            PPHelper.clear();
-            finish();
+            if (PPHelper.isLogin()) {
+                PPHelper.clear();
+                EventBus.getDefault().post(new UserLogoutEvent());
+            } else {
+
+            }
+
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);

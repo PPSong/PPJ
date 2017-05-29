@@ -61,4 +61,5 @@
     <string name="error_invalid_verify_code">验证码格式不正确</string>
     <string name="send">发送</string>
     <string name="bePrivate">私密</string>
+    <string name="get_new_message">得到新消息</string>
 </resources>

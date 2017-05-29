@@ -1,6 +1,19 @@
 package com.penn.ppj.util;
 
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.SystemClock;
+import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
+
+import com.penn.ppj.MainActivity;
+import com.penn.ppj.PPApplication;
+import com.penn.ppj.R;
 
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
@@ -15,6 +28,9 @@ import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
+import static android.content.Context.NOTIFICATION_SERVICE;
+import static com.penn.ppj.util.PPHelper.LOGIN_INFO;
+import static com.penn.ppj.util.PPHelper.getPrefStringValue;
 import static com.penn.ppj.util.PPHelper.ppWarning;
 
 /**
@@ -40,20 +56,28 @@ public class PPSocketSingleton {
 
                                 @Override
                                 public void call(Object... args) {
-                                    Log.v("ppLog", "Socket.EVENT_CONNECT");
+                                    Log.v("ppLog1000", "Socket.EVENT_CONNECT");
                                     try {
                                         JSONObject tmpBody = new JSONObject();
                                         JSONObject _sess = new JSONObject();
-                                        _sess.put("userid", PPHelper.currentUserId);
 
-                                        _sess.put("token", PPHelper.token);
-                                        _sess.put("tokentimestamp", PPHelper.tokenTimestamp);
-                                        tmpBody.put("_sess", _sess);
+                                        String loginInfo = PPHelper.getPrefStringValue(PPHelper.LOGIN_INFO, "");
+
+                                        if (TextUtils.isEmpty(loginInfo)) {
+                                            close();
+                                        } else {
+                                            String[] tmpStrArr = loginInfo.split(",");
+                                            _sess.put("userid", "" + tmpStrArr[0]);
+
+                                            _sess.put("token", "" + tmpStrArr[1]);
+                                            _sess.put("tokentimestamp", "" + tmpStrArr[2]);
+                                            tmpBody.put("_sess", _sess);
 
 
-                                        socket.emit("$init", tmpBody);
-                                        Log.v("pplog165", tmpBody.toString());
-                                        //socket.disconnect();
+                                            socket.emit("$init", tmpBody);
+                                            Log.v("pplog165", tmpBody.toString());
+                                        }
+
                                     } catch (JSONException e) {
                                         e.printStackTrace();
                                     }
@@ -67,7 +91,7 @@ public class PPSocketSingleton {
                                 @Override
                                 public void call(Object... args) {
                                     String msg = args[0].toString();
-                                    Log.v("ppLog", "$init from server:" + msg);
+                                    Log.v("ppLog1000", "$init from server:" + msg);
                                 }
                             })
                     .on(
@@ -77,7 +101,7 @@ public class PPSocketSingleton {
                                 @Override
                                 public void call(Object... args) {
                                     String msg = args[0].toString();
-                                    Log.v("ppLog", "$kick from server:" + msg);
+                                    Log.v("ppLog1000", "$kick from server:" + msg);
                                 }
                             })
                     .on(
@@ -94,7 +118,7 @@ public class PPSocketSingleton {
 
                                 @Override
                                 public void call(Object... args) {
-                                    Log.v("ppLog", "Socket.EVENT_DISCONNECT");
+                                    Log.v("ppLog1000", "Socket.EVENT_DISCONNECT");
                                 }
 
                             });
@@ -121,7 +145,23 @@ public class PPSocketSingleton {
     }
 
     private void sync() {
-        Log.v("pplog502", "sync");
+        //send notification
+// Sets an ID for the notification
+        int mNotificationId = 001;
+// Gets an instance of the NotificationManager service
+        NotificationManager mNotifyMgr =
+                (NotificationManager) PPApplication.getContext().getSystemService(NOTIFICATION_SERVICE);
+// Builds the notification and issues it.
+        mNotifyMgr.notify(mNotificationId, getNotification("test"));
+        Log.v("pplog1000", "sync");
         PPHelper.networkConnectNeedToRefresh();
+    }
+
+    private Notification getNotification(String content) {
+        Notification.Builder builder = new Notification.Builder(PPApplication.getContext());
+        builder.setContentTitle("Scheduled Notification");
+        builder.setContentText(content);
+        builder.setSmallIcon(R.drawable.ic_location_on_black_24dp);
+        return builder.build();
     }
 }

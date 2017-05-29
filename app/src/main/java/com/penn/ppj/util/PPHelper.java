@@ -105,6 +105,7 @@ public class PPHelper {
     public static final int NEARBY_MOMENT_PAGE_SIZE = 10;
     public static final String APP_NAME = "PPJ";
     public static final String AUTH_BODY_KEY = "AUTH_BODY_KEY";
+    public static final String LOGIN_INFO = "LOGIN_INFO";
     public static final String LATEST_GEO = "LATEST_GEO";
     public static final String LATEST_ADDRESS = "LATEST_ADDRESS";
 
@@ -330,6 +331,7 @@ public class PPHelper {
                                     .toString();
                             PPRetrofit.authBody = authBody;
                             PPHelper.setPrefStringValue(AUTH_BODY_KEY, phone + "," + pwd);
+                            PPHelper.setPrefStringValue(LOGIN_INFO, currentUser.getUserId() + "," + currentUser.getToken() + "," + currentUser.getTokenTimestamp());
                             currentUserId = currentUser.getUserId();
                             token = currentUser.getToken();
                             tokenTimestamp = currentUser.getTokenTimestamp();
@@ -448,7 +450,10 @@ public class PPHelper {
         Log.v("pplog", error);
         if (error.equalsIgnoreCase("java.lang.Exception: NO_PERMISSION")) {
             Toasty.error(getContext(), "请重新登录!", Toast.LENGTH_LONG, true).show();
-            clear();
+            if (PPHelper.isLogin()) {
+                PPHelper.clear();
+                PPHelper.noticeLogout();
+            }
         } else {
             Toasty.error(getContext(), error, Toast.LENGTH_LONG, true).show();
         }

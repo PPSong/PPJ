@@ -135,7 +135,7 @@ public class PPHelper {
 
     public static RealmConfiguration realmDefaultConfig = new RealmConfiguration.Builder()
             .deleteRealmIfMigrationNeeded()
-            .name("default.realm")
+            .name("ppDefault.realm")
             .build();
 
     public static void clear() {
@@ -260,8 +260,8 @@ public class PPHelper {
     }
 
     public static PPWarn ppWarning(String jServerResponse) {
-        Log.v("pplog510", jServerResponse);
-        int code = ppFromString(jServerResponse, "code").getAsInt();
+        Log.v("pplog700", jServerResponse);
+        int code = ppFromString(jServerResponse, "code", PPValueType.INT).getAsInt();
         if (code != 1) {
             return new PPWarn(jServerResponse);
         } else {
@@ -1619,5 +1619,10 @@ public class PPHelper {
 
     public static void noticeLogout() {
         EventBus.getDefault().post(new UserLogoutEvent());
+    }
+
+    public static void goLogin(Activity activity) {
+        Intent intent = new Intent(activity, LoginActivity.class);
+        activity.startActivity(intent);
     }
 }

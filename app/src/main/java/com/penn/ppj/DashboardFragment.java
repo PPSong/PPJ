@@ -59,16 +59,6 @@ public class DashboardFragment extends Fragment {
 
     private BehaviorSubject<Integer> scrollDirection = BehaviorSubject.<Integer>create();
 
-    public DashboardFragment() {
-        // Required empty public constructor
-    }
-
-    public static DashboardFragment newInstance() {
-        DashboardFragment fragment = new DashboardFragment();
-
-        return fragment;
-    }
-
     private final View.OnClickListener momentOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -83,6 +73,16 @@ public class DashboardFragment extends Fragment {
         }
     };
 
+    public DashboardFragment() {
+        // Required empty public constructor
+    }
+
+    public static DashboardFragment newInstance() {
+        DashboardFragment fragment = new DashboardFragment();
+
+        return fragment;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,6 +92,7 @@ public class DashboardFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+        Log.v("pplog561", "onCreateView");
         //common
         binding = DataBindingUtil.inflate(
                 inflater, R.layout.fragment_dashboard, container, false);
@@ -156,15 +157,19 @@ public class DashboardFragment extends Fragment {
 
         ppAdapter = new PPAdapter(data);
         binding.mainRecyclerView.setAdapter(ppAdapter);
+
+        Log.v("pplog561", "setupForIsLogin");
     }
 
     public void setupForLogout() {
-        realm.close();
         data.removeAllChangeListeners();
         data = null;
-
+        binding.mainRecyclerView.setAdapter(null);
+        binding.mainRecyclerView.setLayoutManager(null);
         binding.mainRecyclerView.clearOnScrollListeners();
         binding.emptyFrameLayout.setVisibility(View.VISIBLE);
+        realm.close();
+
         Log.v("pplog561", "setupForLogout");
     }
 

@@ -26,8 +26,50 @@
                     android:background="@color/background_super_dark"
                     app:layout_scrollFlags="scroll|enterAlways|snap"
                     app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-                    app:title="@string/jiban"
-                    app:titleTextAppearance="@style/TextAppearance.ToolbarTitleSmallCaps" />
+                    app:titleTextAppearance="@style/TextAppearance.ToolbarTitleSmallCaps">
+
+                    <LinearLayout
+                        android:id="@+id/toolbar_ll"
+                        android:orientation="horizontal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <FrameLayout
+                            android:layout_width="@dimen/icon_size"
+                            android:layout_height="@dimen/icon_size">
+
+                            <ImageButton
+                                android:id="@+id/show_drawer"
+                                android:layout_gravity="center"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@android:color/transparent"
+                                android:tint="@android:color/white"
+                                android:src="@drawable/ic_menu_black_24dp"
+                                />
+
+                            <TextView
+                                android:id="@+id/badge"
+                                android:layout_gravity="top|end"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/item_count"
+                                android:textColor="#FFF"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </FrameLayout>
+
+                        <TextView
+                            android:layout_gravity="center_vertical"
+                            android:id="@+id/title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.ToolbarTitleSmallCaps"/>
+
+                    </LinearLayout>
+
+                </android.support.v7.widget.Toolbar>
 
             </android.support.design.widget.AppBarLayout>
 
@@ -76,7 +118,7 @@
             android:id="@+id/main_nav_view"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:background="@android:color/white"
             android:fitsSystemWindows="true"
             app:headerLayout="@layout/nav_header_main"

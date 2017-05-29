@@ -41,6 +41,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.penn.ppj.R.string.login;
+import static com.penn.ppj.util.PPHelper.ppWarning;
 
 public class LoginFragment extends Fragment {
 
@@ -118,28 +119,16 @@ public class LoginFragment extends Fragment {
         PPHelper.login(binding.usernameTextInputEditText.getText().toString(), binding.passwordTextInputEditText.getText().toString())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        new Handler().postDelayed(
-                                new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        PPHelper.hideProgressDialog();
-                                    }
-                                },
-                                1000
-                        );
-                    }
-                })
                 .subscribe(
                         new Consumer<String>() {
 
                             @Override
                             public void accept(@NonNull String s) throws Exception {
-                               
-                                Intent intent = new Intent(getContext(), MainActivity.class);
-                                startActivity(intent);
+                                PPHelper.hideProgressDialog();
+                                getActivity().finish();
+                                PPHelper.noticeLogin();
+//                                Intent intent = new Intent(getContext(), MainActivity.class);
+//                                startActivity(intent);
                             }
                         },
                         new Consumer<Throwable>() {
@@ -147,6 +136,7 @@ public class LoginFragment extends Fragment {
                             public void accept(@NonNull Throwable throwable) throws Exception {
                                 PPHelper.error(throwable.toString());
                                 Log.v("pplog", "error:" + throwable.toString());
+                                PPHelper.hideProgressDialog();
                             }
                         }
                 );

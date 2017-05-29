@@ -72,11 +72,15 @@ public class NearbyFragment extends Fragment implements PPLoadController.LoadDat
     private final View.OnClickListener momentOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            int position = binding.mainRecyclerView.getChildAdapterPosition(v);
-            NearbyMoment nearbyMoment = data.get(position);
-            Intent intent = new Intent(getContext(), MomentDetailActivity.class);
-            intent.putExtra("momentId", nearbyMoment.getId());
-            startActivity(intent);
+            if (PPHelper.isLogin()) {
+                int position = binding.mainRecyclerView.getChildAdapterPosition(v);
+                NearbyMoment nearbyMoment = data.get(position);
+                Intent intent = new Intent(getContext(), MomentDetailActivity.class);
+                intent.putExtra("momentId", nearbyMoment.getId());
+                startActivity(intent);
+            } else {
+                PPHelper.goLogin(getActivity());
+            }
         }
     };
 

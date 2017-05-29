@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.view.animation.LinearInterpolator;
 
 import com.penn.ppj.databinding.ActivityLoginBinding;
@@ -44,48 +45,5 @@ public class LoginActivity extends AppCompatActivity {
         binding.mainViewPager.setAdapter(adapter);
 
         binding.mainTabLayout.setupWithViewPager(binding.mainViewPager);
-
-        String authBody = PPHelper.getPrefStringValue(PPHelper.AUTH_BODY_KEY, "");
-        if (!TextUtils.isEmpty(authBody)) {
-            String[] tmpArr = authBody.split(",");
-            String phone = tmpArr[0];
-            String pwd = tmpArr[1];
-            Log.v("pplog301", "getPrefStringValue");
-            PPHelper.showProgressDialog(this, getString(R.string.login) + "...", null);
-            PPHelper.login(phone, pwd)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .doFinally(
-                            new Action() {
-                                @Override
-                                public void run() throws Exception {
-                                    new Handler().postDelayed(
-                                            new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    PPHelper.hideProgressDialog();
-                                                }
-                                            },
-                                            1000
-                                    );
-                                }
-                            }
-                    )
-                    .subscribe(
-                            new Consumer<String>() {
-                                @Override
-                                public void accept(@NonNull String s) throws Exception {
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                    startActivity(intent);
-                                }
-                            },
-                            new Consumer<Throwable>() {
-                                @Override
-                                public void accept(@NonNull Throwable throwable) throws Exception {
-                                    PPHelper.error(throwable.toString());
-                                }
-                            }
-                    );
-        }
     }
 }

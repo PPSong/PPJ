@@ -12,12 +12,14 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -43,6 +45,7 @@ import com.penn.ppj.messageEvent.UserLoginEvent;
 import com.penn.ppj.messageEvent.UserLogoutEvent;
 import com.penn.ppj.databinding.ActivityMainBinding;
 import com.penn.ppj.model.realm.CurrentUser;
+import com.penn.ppj.model.realm.Message;
 import com.penn.ppj.model.realm.Moment;
 import com.penn.ppj.model.realm.MomentCreating;
 import com.penn.ppj.model.realm.MyProfile;
@@ -82,10 +85,13 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
 import io.realm.RealmConfiguration;
@@ -97,6 +103,7 @@ import static android.R.attr.breadCrumbShortTitle;
 import static android.R.attr.key;
 import static android.app.Activity.RESULT_OK;
 import static android.os.Build.VERSION_CODES.M;
+import static com.baidu.location.h.j.P;
 import static com.penn.ppj.R.id.item_touch_helper_previous_elevation;
 import static com.penn.ppj.R.id.main_nav_view;
 
@@ -109,8 +116,8 @@ import static com.penn.ppj.util.PPRetrofit.authBody;
 public class MainActivity extends TakePhotoFragmentActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private static final int DASHBOARD = 0;
-    private static final int NEARBY = 1;
+    private static final int NEARBY = 0;
+    private static final int DASHBOARD = 1;
     private static final int NOTIFICATION = 2;
 
     private static final int CREATE_MOMENT = 1001;
@@ -131,12 +138,18 @@ public class MainActivity extends TakePhotoFragmentActivity
 
     private MyProfile myProfile;
 
-    private Realm realm = Realm.getDefaultInstance();
+    private Realm realm;
+
+    private ImageView avatarImageView;
+
+    private RealmResults<Message> messages;
 
     @Override
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
-        realm.close();
+        if (realm != null && !realm.isClosed()) {
+            realm.close();
+        }
         super.onDestroy();
     }
 
@@ -168,7 +181,12 @@ public class MainActivity extends TakePhotoFragmentActivity
             @Override
             public void onClick(View view) {
                 binding.mainFloatingActionMenu.close(true);
-                takePhoto(true);
+                if (PPHelper.isLogin()) {
+                    takePhoto(true);
+                } else {
+                    PPHelper.goLogin(MainActivity.this);
+                }
+
             }
         });
 
@@ -176,25 +194,114 @@ public class MainActivity extends TakePhotoFragmentActivity
             @Override
             public void onClick(View view) {
                 binding.mainFloatingActionMenu.close(true);
-                takePhoto(false);
+                if (PPHelper.isLogin()) {
+                    takePhoto(false);
+                } else {
+                    PPHelper.goLogin(MainActivity.this);
+                }
 
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, binding.mainToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
+        toggle.setDrawerIndicatorEnabled(false);
+
+        binding.showDrawer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawer.openDrawer(Gravity.START);
+            }
+        });
+
         NavigationView navigationView = (NavigationView) findViewById(main_nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
         View hView = navigationView.getHeaderView(0);
-        final ImageView avatarImageView = (ImageView) hView.findViewById(R.id.imageView);
+        avatarImageView = (ImageView) hView.findViewById(R.id.imageView);
 
-        if (!TextUtils.isEmpty(PPHelper.currentUserId));
-        {
+        PPPagerAdapter adapter = new PPPagerAdapter(getSupportFragmentManager());
+        dashboardFragment = new DashboardFragment();
+        nearbyFragment = new NearbyFragment();
+        notificationFragment = new NotificationFragment();
+        adapter.addFragment(nearbyFragment, "C1");
+        adapter.addFragment(dashboardFragment, "C2");
+        adapter.addFragment(notificationFragment, "C3");
+        binding.mainViewPager.setAdapter(adapter);
+        //有几个tab就设几防止page自己重新刷新
+        binding.mainViewPager.setOffscreenPageLimit(3);
+
+        binding.title.setText(getString(R.string.nearby));
+
+        binding.mainViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                switch (position) {
+                    case NEARBY:
+                        binding.title.setText(getString(R.string.nearby));
+                        break;
+                    case DASHBOARD:
+                        binding.title.setText(getString(R.string.dashboard));
+                        break;
+                    case NOTIFICATION:
+                        binding.title.setText(getString(R.string.notification));
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+        ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, binding.mainDrawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        mDrawerToggle.setDrawerIndicatorEnabled(false);
+        requestPermission(this);
+
+        String authBody = PPHelper.getPrefStringValue(PPHelper.AUTH_BODY_KEY, "");
+        if (!TextUtils.isEmpty(authBody)) {
+            String[] tmpArr = authBody.split(",");
+            String phone = tmpArr[0];
+            String pwd = tmpArr[1];
+            Log.v("pplog301", "getPrefStringValue");
+            PPHelper.showProgressDialog(this, getString(R.string.login) + "...", null);
+            PPHelper.login(phone, pwd)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            new Consumer<String>() {
+                                @Override
+                                public void accept(@NonNull String s) throws Exception {
+                                    PPHelper.hideProgressDialog();
+                                    PPHelper.noticeLogin();
+                                }
+                            },
+                            new Consumer<Throwable>() {
+                                @Override
+                                public void accept(@NonNull Throwable throwable) throws Exception {
+                                    PPHelper.error(throwable.toString());
+                                }
+                            }
+                    );
+        } else {
+            setProfileAndUnreadNum();
+        }
+    }
+
+    private void setProfileAndUnreadNum() {
+        if (PPHelper.isLogin()) {
             myProfile = realm.where(MyProfile.class).equalTo("userId", PPHelper.currentUserId).findFirst();
             myProfile.addChangeListener(new RealmChangeListener<MyProfile>() {
                 @Override
@@ -216,53 +323,32 @@ public class MainActivity extends TakePhotoFragmentActivity
                     MainActivity.this.startActivity(intent);
                 }
             });
-        }
 
-        PPPagerAdapter adapter = new PPPagerAdapter(getSupportFragmentManager());
-        dashboardFragment = new DashboardFragment();
-        nearbyFragment = new NearbyFragment();
-        notificationFragment = new NotificationFragment();
-        adapter.addFragment(dashboardFragment, "C1");
-        adapter.addFragment(nearbyFragment, "C2");
-        adapter.addFragment(notificationFragment, "C3");
-        binding.mainViewPager.setAdapter(adapter);
-        //有几个tab就设几防止page自己重新刷新
-        binding.mainViewPager.setOffscreenPageLimit(3);
+            messages = realm.where(Message.class).equalTo("read", false).findAll();
+            int size = messages.size();
+            setBadge(size);
 
-        binding.mainToolbar.setTitle(getString(R.string.dashboard));
-
-        binding.mainViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                switch (position) {
-                    case DASHBOARD:
-                        binding.mainToolbar.setTitle(getString(R.string.dashboard));
-                        break;
-                    case NEARBY:
-                        binding.mainToolbar.setTitle(getString(R.string.nearby));
-                        break;
-                    case NOTIFICATION:
-                        binding.mainToolbar.setTitle(getString(R.string.notification));
-                        break;
-                    default:
-                        break;
+            messages.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<Message>>() {
+                @Override
+                public void onChange(RealmResults<Message> collection, OrderedCollectionChangeSet changeSet) {
+                    int size = messages.size();
+                    setBadge(size);
                 }
-            }
+            });
+        } else {
+            //clear profile and message
+            avatarImageView.setImageResource(0);
+            setBadge(0);
+        }
+    }
 
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
-
-        ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, binding.mainDrawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        mDrawerToggle.setDrawerIndicatorEnabled(false);
-        requestPermission(this);
+    private void setBadge(int size) {
+        if (size > 0) {
+            binding.badge.setText("" + messages.size());
+            binding.badge.setVisibility(View.VISIBLE);
+        } else {
+            binding.badge.setVisibility(View.INVISIBLE);
+        }
     }
 
 //    @Override
@@ -315,15 +401,21 @@ public class MainActivity extends TakePhotoFragmentActivity
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void UserLoginEvent(UserLoginEvent event) {
         Log.v("pplog508", "UserLoginEvent:");
+        realm = Realm.getDefaultInstance();
         dashboardFragment.setupForIsLogin();
         notificationFragment.setupForIsLogin();
+        setProfileAndUnreadNum();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void UserLogoutEvent(UserLogoutEvent event) {
         Log.v("pplog508", "UserLogoutEvent:");
+        if (realm != null && !realm.isClosed()) {
+            realm.close();
+        }
         dashboardFragment.setupForLogout();
         notificationFragment.setupForLogout();
+        setProfileAndUnreadNum();
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
@@ -421,7 +513,7 @@ public class MainActivity extends TakePhotoFragmentActivity
         } else if (id == R.id.exit) {
             if (PPHelper.isLogin()) {
                 PPHelper.clear();
-                EventBus.getDefault().post(new UserLogoutEvent());
+                PPHelper.noticeLogout();
             } else {
 
             }

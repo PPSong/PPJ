@@ -302,7 +302,7 @@ public class RegisterFragment extends Fragment {
 
         signUpButtonObservable
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         new Consumer<Object>() {
                             public void accept(Object o) {
@@ -333,6 +333,7 @@ public class RegisterFragment extends Fragment {
     }
 
     private void register() {
+        PPHelper.showProgressDialog(getContext(), getString(R.string.register) + "...", null);
         final String tmpPhone = binding.phoneInput.getText().toString();
         final String tmpPassword = binding.passwordInput.getText().toString();
 
@@ -393,14 +394,16 @@ public class RegisterFragment extends Fragment {
                         new Consumer<String>() {
                             @Override
                             public void accept(@NonNull String s) throws Exception {
-
-                                Intent intent = new Intent(getContext(), MainActivity.class);
-                                startActivity(intent);
+                                PPHelper.hideProgressDialog();
+                                getActivity().finish();
+//                                Intent intent = new Intent(getContext(), MainActivity.class);
+//                                startActivity(intent);
                             }
                         },
                         new Consumer<Throwable>() {
                             @Override
                             public void accept(@NonNull Throwable throwable) throws Exception {
+                                PPHelper.hideProgressDialog();
                                 PPHelper.error(throwable.toString());
                             }
                         }

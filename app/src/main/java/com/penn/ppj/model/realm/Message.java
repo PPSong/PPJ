@@ -1,5 +1,7 @@
 package com.penn.ppj.model.realm;
 
+import android.view.View;
+
 import com.penn.ppj.ppEnum.MessageType;
 
 import io.realm.RealmObject;
@@ -103,5 +105,9 @@ public class Message extends RealmObject {
 
     public void setMessageType(MessageType messageType) {
         this.messageType = messageType.toString();
+    }
+
+    public int unReadMark() {
+        return read ? View.INVISIBLE : View.VISIBLE;
     }
 }

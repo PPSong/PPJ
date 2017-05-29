@@ -36,6 +36,8 @@ import io.realm.RealmResults;
 import io.realm.Sort;
 
 import static android.R.attr.type;
+import static com.baidu.location.h.j.P;
+import static com.baidu.location.h.j.l;
 
 public class NotificationFragment extends Fragment {
 
@@ -65,6 +67,16 @@ public class NotificationFragment extends Fragment {
         public void onClick(View v) {
             int position = binding.mainRecyclerView.getChildAdapterPosition(v);
             Message message = data.get(position);
+            //markLocalMessageRead
+            try (Realm realm = Realm.getDefaultInstance()) {
+                realm.beginTransaction();
+
+                Message tmpMessage = realm.where(Message.class).equalTo("id", message.getId()).findFirst();
+                tmpMessage.setRead(true);
+
+                realm.commitTransaction();
+            }
+
             goMessageDetail(message);
         }
     };
@@ -113,7 +125,9 @@ public class NotificationFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        realm.close();
+        if (realm != null && !realm.isClosed()) {
+            realm.close();
+        }
         super.onDestroyView();
     }
 
@@ -147,13 +161,13 @@ public class NotificationFragment extends Fragment {
     }
 
     public void setupForLogout() {
-        realm.close();
         data.removeAllChangeListeners();
         data = null;
-
+        binding.mainRecyclerView.setAdapter(null);
+        binding.mainRecyclerView.setLayoutManager(null);
         binding.mainRecyclerView.clearOnScrollListeners();
         binding.emptyFrameLayout.setVisibility(View.VISIBLE);
-        Log.v("pplog561", "setupForLogout");
+        realm.close();
     }
 
     private void goMessageDetail(Message message) {

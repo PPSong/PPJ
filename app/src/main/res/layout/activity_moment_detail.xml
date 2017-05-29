@@ -106,6 +106,7 @@
                 android:elevation="21dp">
 
                 <ImageButton
+                    android:id="@+id/back_button"
                     android:layout_width="@dimen/icon"
                     android:layout_height="@dimen/icon"
                     android:layout_marginLeft="16dp"

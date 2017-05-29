@@ -298,6 +298,13 @@ public class MomentDetailActivity extends AppCompatActivity implements CommentIn
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_moment_detail);
 
+        binding.backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, PPHelper.getStatusBarAddActionBarHeight(this));
         binding.toolbarConstraintLayout.setLayoutParams(params);
 
